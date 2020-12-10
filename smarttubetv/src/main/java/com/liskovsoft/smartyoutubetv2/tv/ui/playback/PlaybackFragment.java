@@ -40,7 +40,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.controller.ExoPlayerController;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.controller.PlayerController;
-import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.V2.CustomOverridesRenderersFactory;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.V3.CustomOverridesRenderersFactory;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.DebugInfoManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.ExoPlayerInitializer;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.SubtitleManager;
@@ -92,11 +92,11 @@ public class PlaybackFragment extends VideoEventsOverrideFragment implements Pla
         mMediaGroupAdapters = new HashMap<>();
         mBackgroundManager = getLeanbackActivity().getBackgroundManager();
         mBackgroundManager.setBackgroundColor(ContextCompat.getColor(getLeanbackActivity(), R.color.player_background));
-        mPlayerInitializer = new ExoPlayerInitializer(getActivity());
-        mExoPlayerController = new ExoPlayerController(getActivity());
+        mPlayerInitializer = new ExoPlayerInitializer(getContext());
+        mExoPlayerController = new ExoPlayerController(getContext());
 
         mPlaybackPresenter = PlaybackPresenter.instance(getContext());
-        mPlaybackPresenter.register(this);
+        mPlaybackPresenter.setView(this);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class PlaybackFragment extends VideoEventsOverrideFragment implements Pla
 
         setupPlayerBackground();
 
-        mPlaybackPresenter.onInitDone();
+        mPlaybackPresenter.onViewInitialized();
     }
 
     @Override
@@ -170,7 +170,9 @@ public class PlaybackFragment extends VideoEventsOverrideFragment implements Pla
 
     public void onDispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            mPlayerGlue.syncControlsState();
+            if (mPlayerGlue != null) {
+                mPlayerGlue.syncControlsState();
+            }
         }
     }
 
@@ -678,7 +680,7 @@ public class PlaybackFragment extends VideoEventsOverrideFragment implements Pla
         blockEngine(false);
         releasePlayer();
 
-        mPlaybackPresenter.unregister(this);
+        mPlaybackPresenter.onViewDestroyed();
     }
 
     @Override

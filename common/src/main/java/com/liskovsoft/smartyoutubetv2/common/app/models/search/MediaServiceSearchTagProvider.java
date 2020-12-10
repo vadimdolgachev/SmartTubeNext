@@ -4,7 +4,6 @@ import android.util.Log;
 
 import com.liskovsoft.mediaserviceinterfaces.MediaGroupManager;
 import com.liskovsoft.mediaserviceinterfaces.MediaService;
-import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.smartyoutubetv2.common.utils.RxUtils;
 import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
@@ -19,8 +18,8 @@ public class MediaServiceSearchTagProvider implements SearchTagsProvider {
     private final MediaGroupManager mGroupManager;
     private Disposable mTagsAction;
 
-    public MediaServiceSearchTagProvider(Locale currentLocale) {
-        MediaService mediaService = YouTubeMediaService.instance(currentLocale);
+    public MediaServiceSearchTagProvider() {
+        MediaService mediaService = YouTubeMediaService.instance();
         mGroupManager = mediaService.getMediaGroupManager();
     }
 
