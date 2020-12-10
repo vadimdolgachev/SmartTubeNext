@@ -1,5 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.search;
 
+import android.util.Log;
+
 import com.liskovsoft.mediaserviceinterfaces.MediaGroupManager;
 import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
@@ -24,6 +26,7 @@ public class MediaServiceSearchTagProvider implements SearchTagsProvider {
 
     @Override
     public void search(String query, ResultsCallback callback) {
+        Log.d("Search", "[Sergey] search tag: ");
         RxUtils.disposeActions(mTagsAction);
 
         mTagsAction = mGroupManager.getSearchTagsObserve(query)

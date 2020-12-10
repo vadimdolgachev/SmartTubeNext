@@ -59,6 +59,7 @@ dependencies {
 //    implementation 'com.amazon.android:extension-okhttp:' + amazonExoplayerVersion
      implementation 'com.google.android.exoplayer:exoplayer:' + exoplayerVersion
      implementation 'com.google.android.exoplayer:extension-okhttp:' + exoplayerVersion
+    implementation 'com.amplitude:android-sdk:2.17.0'
 
     implementation 'androidx.media:media:' + mediaXLibraryVersion // exoplayer fix
 

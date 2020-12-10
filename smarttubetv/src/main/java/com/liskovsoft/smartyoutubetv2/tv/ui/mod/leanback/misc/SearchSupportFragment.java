@@ -20,9 +20,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 
 import androidx.fragment.app.Fragment;
-import androidx.leanback.R;
 import androidx.leanback.app.BrowseSupportFragment;
-import androidx.leanback.app.RowsSupportFragment;
+import androidx.leanback.widget.ArrayObjectAdapter;
+import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ObjectAdapter;
 import androidx.leanback.widget.ObjectAdapter.DataObserver;
 import androidx.leanback.widget.OnItemViewClickedListener;
@@ -38,6 +38,10 @@ import androidx.leanback.widget.SpeechRecognitionCallback;
 import androidx.leanback.widget.VerticalGridView;
 
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
+import com.liskovsoft.smartyoutubetv2.tv.R;
+import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
+import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.base.RowsSupportFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,8 +73,8 @@ public class SearchSupportFragment extends Fragment {
 
     private static final String EXTRA_LEANBACK_BADGE_PRESENT = "LEANBACK_BADGE_PRESENT";
     private static final String ARG_PREFIX = SearchSupportFragment.class.getCanonicalName();
-    private static final String ARG_QUERY =  ARG_PREFIX + ".query";
-    private static final String ARG_TITLE = ARG_PREFIX  + ".title";
+    private static final String ARG_QUERY = ARG_PREFIX + ".query";
+    private static final String ARG_TITLE = ARG_PREFIX + ".title";
 
     static final long SPEECH_RECOGNITION_DELAY_MS = 300;
 
@@ -198,7 +202,13 @@ public class SearchSupportFragment extends Fragment {
     };
 
     public void focusOnSearchField() {
-        mSearchTextEditor.requestFocus(); // MOD: focus on search field
+        Log.d(TAG, "focusOnSearchField: ");
+        ((SearchTagsActivity) getActivity()).visibleKeyBoard();
+    }
+
+    public void verticalGridViewFocus() {
+        Log.d(TAG, "verticalGridViewFocus: ");
+        mRowsSupportFragment.getVerticalGridView().requestFocus();
     }
 
     final Runnable mStartRecognitionRunnable = new Runnable() {
@@ -222,6 +232,7 @@ public class SearchSupportFragment extends Fragment {
     private SpeechRecognitionCallback mSpeechRecognitionCallback;
 
     private String mTitle;
+    public int etId = 0;
     private Drawable mBadgeDrawable;
     private ExternalQuery mExternalQuery;
 
@@ -235,12 +246,12 @@ public class SearchSupportFragment extends Fragment {
     private boolean mPendingStartRecognitionWhenPaused;
     private SearchBar.SearchBarPermissionListener mPermissionListener =
             new SearchBar.SearchBarPermissionListener() {
-        @Override
-        public void requestAudioPermission() {
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},
-                    AUDIO_PERMISSION_REQUEST_CODE);
-        }
-    };
+                @Override
+                public void requestAudioPermission() {
+                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},
+                            AUDIO_PERMISSION_REQUEST_CODE);
+                }
+            };
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions,
@@ -260,7 +271,7 @@ public class SearchSupportFragment extends Fragment {
         return createArgs(args, query, null);
     }
 
-    public static Bundle createArgs(Bundle args, String query, String title)  {
+    public static Bundle createArgs(Bundle args, String query, String title) {
         if (args == null) {
             args = new Bundle();
         }
@@ -293,9 +304,26 @@ public class SearchSupportFragment extends Fragment {
         super.onCreate(savedInstanceState);
     }
 
+    public void sendText(String text) {
+        mSearchTextEditor.setText(text);
+    }
+
+    public void setEtId(int id) {
+        etId = id;
+    }
+
+    public int getEtId() {
+        return etId;
+    }
+
+    public int getResultVideoSize() {
+        return ((VideoGroupObjectAdapter) ((ListRow) ((ArrayObjectAdapter) mResultAdapter).get(1)).getAdapter()).size();
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.d(TAG, "onCreateView: ");
         View root = inflater.inflate(R.layout.lb_search_fragment, container, false);
 
         FrameLayout searchFrame = (FrameLayout) root.findViewById(R.id.lb_search_frame);
@@ -335,56 +363,10 @@ public class SearchSupportFragment extends Fragment {
         });
         mSearchBar.setSpeechRecognitionCallback(mSpeechRecognitionCallback);
         mSearchBar.setPermissionListener(mPermissionListener);
+
         applyExternalQuery();
 
-        // MOD: inner search bar views for improved focus handling
 
-        mSearchTextEditor = mSearchBar.findViewById(R.id.lb_search_text_editor);
-        mSearchTextEditor.setOnFocusChangeListener((v, focused) -> {
-            Log.d(TAG, "on search field focused");
-            if (focused && mRowsSupportFragment != null && mRowsSupportFragment.getVerticalGridView() != null) {
-                // scroll cursor to end after transition from lb_search_bar_speech_orb
-                mScrollToEndAfterTextChanged = mSearchTextEditor.getText().length() == 0;
-                Selection.setSelection(mSearchTextEditor.getText(), mSearchTextEditor.length());
-
-                mRowsSupportFragment.getVerticalGridView().clearFocus();
-
-                if (getContext() != null) {
-                    // https://stackoverflow.com/questions/5105354/how-to-show-soft-keyboard-when-edittext-is-focused
-                    InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-                }
-            }
-        });
-
-        mSearchTextEditor.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (mScrollToEndAfterTextChanged) {
-                    Selection.setSelection(mSearchTextEditor.getText(), mSearchTextEditor.length());
-                    mScrollToEndAfterTextChanged = false;
-                }
-            }
-        });
-        //mSearchTextEditor.setOnClickListener(v -> {
-        //    Log.d(TAG, "on search field clicked");
-        //
-        //    if (getContext() != null) {
-        //        // https://stackoverflow.com/questions/5105354/how-to-show-soft-keyboard-when-edittext-is-focused
-        //        InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        //        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-        //    }
-        //});
 
         mSpeechOrbView = mSearchBar.findViewById(R.id.lb_search_bar_speech_orb);
         mSpeechOrbView.setOnFocusChangeListener((v, hasFocus) -> {
@@ -438,6 +420,28 @@ public class SearchSupportFragment extends Fragment {
         if (null != mProvider) {
             onSetSearchResultProvider();
         }
+        mSearchTextEditor = mSearchBar.findViewById(R.id.lb_search_text_editor);
+
+        mSearchTextEditor.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (mScrollToEndAfterTextChanged) {
+                    Selection.setSelection(mSearchTextEditor.getText(), mSearchTextEditor.length());
+                    mScrollToEndAfterTextChanged = false;
+                    ((SearchTagsActivity) getActivity()).setTextEtSeach(mSearchTextEditor.getText().toString());
+                }
+            }
+        });
         return root;
     }
 
@@ -468,6 +472,7 @@ public class SearchSupportFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume: ");
         mIsPaused = false;
         if (mSpeechRecognitionCallback == null && null == mSpeechRecognizer) {
             mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(
@@ -483,6 +488,13 @@ public class SearchSupportFragment extends Fragment {
             // Ensure search bar state consistency when using external recognizer
             mSearchBar.stopRecognition();
         }
+        mSearchBar.setVisibility(View.GONE);
+        /*mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ((SearchTagsActivity) getActivity()).visibleKeyBoard();
+            }
+        }, 500);*/
     }
 
     @Override
@@ -555,7 +567,7 @@ public class SearchSupportFragment extends Fragment {
      * Sets an item selection listener for the results.
      *
      * @param listener The item selection listener to be invoked when an item in
-     *        the search results is selected.
+     *                 the search results is selected.
      */
     public void setOnItemViewSelectedListener(OnItemViewSelectedListener listener) {
         mOnItemViewSelectedListener = listener;
@@ -565,7 +577,7 @@ public class SearchSupportFragment extends Fragment {
      * Sets an item clicked listener for the results.
      *
      * @param listener The item clicked listener to be invoked when an item in
-     *        the search results is clicked.
+     *                 the search results is clicked.
      */
     public void setOnItemViewClickedListener(OnItemViewClickedListener listener) {
         if (listener != mOnItemViewClickedListener) {
@@ -646,7 +658,7 @@ public class SearchSupportFragment extends Fragment {
      * a list of query completions that the system will show in the IME.
      *
      * @param completions A list of completions to show in the IME. Setting to
-     *        null or empty will clear the list.
+     *                    null or empty will clear the list.
      */
     public void displayCompletions(List<String> completions) {
         mSearchBar.displayCompletions(completions);
@@ -657,7 +669,7 @@ public class SearchSupportFragment extends Fragment {
      * a list of query completions that the system will show in the IME.
      *
      * @param completions A list of completions to show in the IME. Setting to
-     *        null or empty will clear the list.
+     *                    null or empty will clear the list.
      */
     public void displayCompletions(CompletionInfo[] completions) {
         mSearchBar.displayCompletions(completions);
@@ -666,8 +678,9 @@ public class SearchSupportFragment extends Fragment {
     /**
      * Sets this callback to have the fragment pass speech recognition requests
      * to the activity rather than using a SpeechRecognizer object.
+     *
      * @deprecated Launching voice recognition activity is no longer supported. App should declare
-     *             android.permission.RECORD_AUDIO in AndroidManifest file.
+     * android.permission.RECORD_AUDIO in AndroidManifest file.
      */
     @Deprecated
     public void setSpeechRecognitionCallback(SpeechRecognitionCallback callback) {
@@ -686,7 +699,7 @@ public class SearchSupportFragment extends Fragment {
      * {@link SearchResultProvider#onQueryTextSubmit onQueryTextSubmit} will be
      * called on the provider if it is set.
      *
-     * @param query The search query to set.
+     * @param query  The search query to set.
      * @param submit Whether to submit the query.
      */
     public void setSearchQuery(String query, boolean submit) {
@@ -728,7 +741,7 @@ public class SearchSupportFragment extends Fragment {
      * <li>{@link RecognizerIntent#EXTRA_PARTIAL_RESULTS} set to true</li>
      * <li>{@link RecognizerIntent#EXTRA_PROMPT} set to the search bar hint text</li>
      * </ul>
-     *
+     * <p>
      * For handling the intent returned from the service, see
      * {@link #setSearchQuery(Intent, boolean)}.
      */
@@ -758,7 +771,7 @@ public class SearchSupportFragment extends Fragment {
         }
     }
 
-    void queryComplete() {
+    public void queryComplete() {
         if (DEBUG) Log.v(TAG, "queryComplete");
         mStatus |= QUERY_COMPLETE;
         focusOnResults();
@@ -766,8 +779,17 @@ public class SearchSupportFragment extends Fragment {
 
     void updateSearchBarVisibility() {
         int position = mRowsSupportFragment != null ? mRowsSupportFragment.getSelectedPosition() : -1;
-        mSearchBar.setVisibility(position <=0 || mResultAdapter == null
+        mSearchBar.setVisibility(position <= 0 || mResultAdapter == null
                 || mResultAdapter.size() == 0 ? View.VISIBLE : View.GONE);
+
+        if (position <= 0 || mResultAdapter == null || mResultAdapter.size() == 0) {
+            ((SearchTagsActivity) getActivity()).visibleEtSearch();
+
+        } else {
+            ((SearchTagsActivity) getActivity()).hideKeyBoard();
+            ((SearchTagsActivity) getActivity()).hideEtSearch();
+        }
+
     }
 
     void updateSearchBarNextFocusId() {
@@ -776,8 +798,8 @@ public class SearchSupportFragment extends Fragment {
         }
         final int viewId = (mResultAdapter.size() == 0 || mRowsSupportFragment == null
                 || mRowsSupportFragment.getVerticalGridView() == null)
-                        ? 0 : mRowsSupportFragment.getVerticalGridView().getId();
-        
+                ? 0 : mRowsSupportFragment.getVerticalGridView().getId();
+
         mSearchBar.setNextFocusDownId(viewId);
     }
 
@@ -786,6 +808,7 @@ public class SearchSupportFragment extends Fragment {
                 && mRowsSupportFragment != null && mRowsSupportFragment.getAdapter() == mResultAdapter) {
             focusOnResults();
         } else {
+            Log.d(TAG, "ТУТ: ");
             mSearchBar.requestFocus();
         }
     }
@@ -851,6 +874,8 @@ public class SearchSupportFragment extends Fragment {
     }
 
     public void pressKeySearch() {
+        Log.d(TAG, "pressKeySearch: " + mSearchBar.hasFocus());
+        mSearchBar.requestFocus();
         if (mSearchBar.hasFocus() && !mSearchBar.isRecognizing()) {
             mSpeechOrbView.showListening();
             mSpeechOrbView.callOnClick();

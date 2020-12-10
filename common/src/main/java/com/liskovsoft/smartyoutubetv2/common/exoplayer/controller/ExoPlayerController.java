@@ -38,6 +38,7 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
     private PlayerView mPlayerView;
 
     public ExoPlayerController(Context context) {
+        android.util.Log.d(TAG, "ExoPlayerController: ");
         mContext = context;
         mMediaSourceFactory = ExoMediaSourceFactory.instance(context);
         mTrackSelectorManager = new TrackSelectorManager();

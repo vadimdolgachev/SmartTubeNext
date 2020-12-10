@@ -22,17 +22,18 @@ import com.liskovsoft.smartyoutubetv2.tv.adapter.vineyard.PaginationAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.vineyard.TagAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.ProgressBarManager;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.SearchSupportFragment;
+import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
 
 public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         implements SearchSupportFragment.SearchResultProvider, SearchView {
     private static final String TAG = SearchTagsFragmentBase.class.getSimpleName();
     private static final int REQUEST_SPEECH = 0x00000010;
-    
+
     private Handler mHandler;
     private TagAdapter mSearchTagsAdapter;
     private ObjectAdapter mItemResultsAdapter;
     private ArrayObjectAdapter mResultsAdapter;
-    
+
     private boolean mIsStopping;
     private SearchTagsProvider mSearchTagsProvider;
     private ProgressBarManager mProgressBarManager;
@@ -53,9 +54,19 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         View root = super.onCreateView(inflater, container, savedInstanceState);
 
         mProgressBarManager.setRootView((ViewGroup) root);
-        mSearchTagsAdapter = new TagAdapter(getActivity(), "", getSearchTextEditorId());
+        mSearchTagsAdapter = new TagAdapter(getActivity(), "", getEtId(), onFocusChangeListener);
         return root;
     }
+
+    private View.OnFocusChangeListener onFocusChangeListener = new View.OnFocusChangeListener() {
+        @Override
+        public void onFocusChange(View view, boolean b) {
+            if(b){
+                android.util.Log.d(TAG, "TagAdapterFocus: ");
+                ((SearchTagsActivity) getActivity()).hideKeyBoard();
+            }
+        }
+    };
 
     @Override
     public void onStart() {
@@ -100,7 +111,7 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
     }
 
     protected abstract void onItemViewSelected(Object item);
-    
+
     protected abstract void onItemViewClicked(Object item);
 
     protected void setItemResultsAdapter(ObjectAdapter adapter) {
@@ -135,6 +146,7 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
     }
 
     private void searchTaggedPosts(String tag) {
+        android.util.Log.d(TAG, "searchTaggedPosts: " + tag);
         mSearchTagsAdapter.setTag(tag);
         mResultsAdapter.clear();
         mSearchTagsAdapter.clear();

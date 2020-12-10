@@ -2,6 +2,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.search.tags;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+
 import androidx.annotation.Nullable;
 
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
@@ -52,7 +53,11 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
 
     @Override
     public void updateSearch(VideoGroup group) {
+        android.util.Log.d(TAG, "Поиск выдача результата: ");
         mItemResultsAdapter.append(group);
+        ((SearchTagsActivity) getActivity()).hideEtSearch();
+        ((SearchTagsActivity) getActivity()).hideKeyBoard();
+        verticalGridViewFocus();
     }
 
     @Override
@@ -70,7 +75,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     public void startVoiceRecognition() {
         startSearch(null, true);
     }
-    
+
     private void startSearch(String searchText, boolean enableRecognition) {
         mNewQuery = null;
 

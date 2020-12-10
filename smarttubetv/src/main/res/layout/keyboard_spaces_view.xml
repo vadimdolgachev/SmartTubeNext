@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/keyboard_bg"
+        android:focusable="true">
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_gravity="center"
+            android:background="@drawable/settings_language" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/keyboard_bg"
+        android:focusable="true">
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_gravity="center"
+            android:background="@drawable/settings_language" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/keyboard_bg"
+        android:focusable="true">
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_gravity="center"
+            android:background="@drawable/settings_language" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="500dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center"
+        android:layout_margin="4dp"
+        android:background="@color/search_opaque"
+        android:focusable="true">
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/keyboard_bg"
+        android:focusable="true">
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_gravity="center"
+            android:background="@drawable/settings_language" />
+    </FrameLayout>
+</LinearLayout>

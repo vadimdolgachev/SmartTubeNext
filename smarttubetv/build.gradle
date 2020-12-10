@@ -33,6 +33,15 @@ if (getGradle().getStartParameter().getTaskRequests().toString().contains("Stbet
 }
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('/home/sergey/keyBTV')
+            storePassword 'afwergdfg'
+            keyPassword 'afwergdfg'
+            keyAlias 'BTV'
+        }
+    }
+
     // FIX: Default interface methods are only supported starting with Android N (--min-api 24)
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -49,8 +58,8 @@ android {
         applicationId "com.liskovsoft.smarttubetv"
         minSdkVersion project.properties.minSdkVersion
         targetSdkVersion project.properties.targetSdkVersion
-        versionCode 173
-        versionName "10.33"
+        versionCode 180
+        versionName "10.40"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "long", "TIMESTAMP", System.currentTimeMillis() + "L"
 

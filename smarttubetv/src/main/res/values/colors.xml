@@ -49,4 +49,10 @@
     <color name="primary_light">#B2DFDB</color>
     <color name="primary">#009688</color>
     <color name="white_87pc">#DDFFFFFF</color>
+
+
+    <color name="tabletcolourA2">#22ffffff</color>
+    <color name="yellowDarker">#ffbc00</color>
+    <color name="yellowDarkerPressed">#C29310</color>
+
 </resources>

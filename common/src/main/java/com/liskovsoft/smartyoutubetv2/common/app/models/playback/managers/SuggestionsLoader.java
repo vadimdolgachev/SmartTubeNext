@@ -86,6 +86,7 @@ public class SuggestionsLoader extends PlayerEventListenerHelper {
     }
 
     private void loadSuggestions(Video video) {
+        android.util.Log.d(TAG, "Тут слать аналитику, какой видос был запущен: ");
         if (video == null) {
             Log.e(TAG, "loadSuggestions: video is null");
             return;

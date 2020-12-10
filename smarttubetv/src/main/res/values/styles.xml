@@ -115,5 +115,14 @@
     <style name="App.Theme.Dark.OLED.Player" parent="App.Theme.Dark.Player">
         <item name="cardSelectedBackground">@color/card_selected_background_white_grey</item>
     </style>
+
+    <style name="paymentKeyStyles">
+        <item name="android:background">@drawable/keyboard_bg</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:layout_width">60dp</item>
+        <item name="android:layout_height">60dp</item>
+    </style>
     <!--  End Color scheme: Dark  -->
 </resources>
