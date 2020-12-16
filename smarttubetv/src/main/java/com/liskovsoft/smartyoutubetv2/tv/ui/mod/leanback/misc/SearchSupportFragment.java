@@ -178,6 +178,7 @@ public class SearchSupportFragment extends Fragment {
                 // until we got first onChange() from the provider
                 if (!(firstTime && (mResultAdapter == null || mResultAdapter.size() == 0))) {
                     mRowsSupportFragment.setAdapter(mResultAdapter);
+//                    mRowsSupportFragment.getView().setNextFocusUpId();
                 }
                 executePendingQuery();
             }

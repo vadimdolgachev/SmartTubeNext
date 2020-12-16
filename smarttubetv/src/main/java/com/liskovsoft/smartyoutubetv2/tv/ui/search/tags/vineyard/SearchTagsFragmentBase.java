@@ -17,11 +17,14 @@ import androidx.leanback.widget.ObjectAdapter;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.SearchTagsProvider;
+import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SearchView;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.vineyard.PaginationAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.vineyard.TagAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.ProgressBarManager;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.SearchSupportFragment;
+
+import java.util.List;
 
 public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         implements SearchSupportFragment.SearchResultProvider, SearchView {
@@ -36,6 +39,7 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
     private boolean mIsStopping;
     private SearchTagsProvider mSearchTagsProvider;
     private ProgressBarManager mProgressBarManager;
+    private ListRow mSearchTagsRow;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -119,6 +123,10 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         return mResultsAdapter.size() > 0;
     }
 
+    public boolean hasTags() {
+        return mSearchTagsAdapter.size() > 0;
+    }
+
     private void setupListeners() {
         setOnItemViewClickedListener((itemViewHolder, item, rowViewHolder, row) -> onItemViewClicked(item));
         setOnItemViewSelectedListener((itemViewHolder, item, rowViewHolder, row) -> onItemViewSelected(item));
@@ -139,13 +147,23 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         mResultsAdapter.clear();
         mSearchTagsAdapter.clear();
         //mResultsHeader = new HeaderItem(0, getString(R.string.text_search_results, tag));
-        mResultsAdapter.add(new ListRow(mSearchTagsAdapter));
+        mSearchTagsRow = new ListRow(mSearchTagsAdapter);
+        mResultsAdapter.add(mSearchTagsRow);
         mResultsAdapter.add(new ListRow(mItemResultsAdapter));
         performSearch(mSearchTagsAdapter);
     }
 
     private void performSearch(PaginationAdapter adapter) {
         String query = adapter.getAdapterOptions().get(PaginationAdapter.KEY_TAG);
-        mSearchTagsProvider.search(query, adapter::addAllItems);
+
+        mSearchTagsProvider.search(query, new SearchTagsProvider.ResultsCallback() {
+            @Override
+            public void onResults(List<Tag> results) {
+                if (results.isEmpty()) {
+                    mResultsAdapter.remove(mSearchTagsRow);
+                }
+                mSearchTagsAdapter.addAllItems(results);
+            }
+        });
     }
 }
