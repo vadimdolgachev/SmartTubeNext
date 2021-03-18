@@ -34,6 +34,7 @@ public class UiOptionItem implements OptionItem {
                 continue;
             }
             if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT
+                    && format.getTitle() != null
                     && ((String) format.getTitle()).contains("vp9")) {
                 continue;
             }
