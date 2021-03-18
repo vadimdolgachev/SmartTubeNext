@@ -161,10 +161,6 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                 Format format = group.getFormat(trackIndex);
 
                 MediaTrack mediaTrack = MediaTrack.forRendererIndex(rendererIndex);
-                if (rendererIndex == RENDERER_INDEX_VIDEO) {
-                    mediaTrack.isHidden = format.height > FlavorConfig.Player.MAX_HEIGHT_VIDEO_RESOLUTION ||
-                            TrackSelectorUtil.isHdrCodec(format.codecs);
-                }
                 mediaTrack.format = format;
                 mediaTrack.groupIndex = groupIndex;
                 mediaTrack.trackIndex = trackIndex;
@@ -413,6 +409,10 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                     MediaTrack mediaTrack = renderer.mediaTracks[groupIndex][trackIndex];
 
                     int compare = track.inBounds(mediaTrack);
+
+                    if (mediaTrack.format.height > FlavorConfig.Player.MAX_HEIGHT_VIDEO_RESOLUTION) {
+                        continue;
+                    }
 
                     if (compare == 0) {
                         Log.d(TAG, "findBestMatch: Found exact match in this track list: " + mediaTrack.format);
