@@ -1,5 +1,8 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui;
 
+import android.os.Build;
+
+import com.liskovsoft.smartyoutubetv2.common.app.FlavorConfig;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.FormatItem;
 
 import java.util.ArrayList;
@@ -27,6 +30,13 @@ public class UiOptionItem implements OptionItem {
         List<OptionItem> options = new ArrayList<>();
 
         for (FormatItem format : formats) {
+            if (format.getHeight() > FlavorConfig.Player.MAX_HEIGHT_VIDEO_RESOLUTION) {
+                continue;
+            }
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT
+                    && ((String) format.getTitle()).contains("vp9")) {
+                continue;
+            }
             options.add(from(format, callback, defaultTitle));
         }
 
