@@ -4,8 +4,8 @@ import android.os.Build;
 
 public class FlavorConfig {
     public static class Player {
-        public final static int MAX_HEIGHT_VIDEO_RESOLUTION = (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT ? 720 :
-                Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1 ? 1920 : 2160);
+        public final static int MAX_VIDEO_WIDTH = (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT ? 720 :
+                Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1 ? 1920 : 3840);
     }
 
     public static class AppPrefs {

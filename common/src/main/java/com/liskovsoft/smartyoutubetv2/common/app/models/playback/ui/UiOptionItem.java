@@ -30,7 +30,7 @@ public class UiOptionItem implements OptionItem {
         List<OptionItem> options = new ArrayList<>();
 
         for (FormatItem format : formats) {
-            if (format.getHeight() > FlavorConfig.Player.MAX_HEIGHT_VIDEO_RESOLUTION) {
+            if (format.getWidth() > FlavorConfig.Player.MAX_VIDEO_WIDTH) {
                 continue;
             }
             if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT
