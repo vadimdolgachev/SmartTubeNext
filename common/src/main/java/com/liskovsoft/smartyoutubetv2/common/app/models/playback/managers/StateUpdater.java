@@ -1,6 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.playback.managers;
 
-import android.content.Context;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import com.liskovsoft.mediaserviceinterfaces.MediaItemManager;
@@ -46,6 +46,9 @@ public class StateUpdater extends PlayerEventListenerHelper {
         mPlayerData = PlayerData.instance(getActivity());
 
         mVideoFormat = Helpers.get(mPlayerData.getVideoFormat(), FormatItem.VIDEO_HD_AVC_30);
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
+            mVideoFormat = FormatItem.VIDEO_HD_VP9_30;
+        }
         mAudioFormat = Helpers.get(mPlayerData.getAudioFormat(), FormatItem.AUDIO_HQ_MP4A);
         mSubtitleFormat = Helpers.get(mPlayerData.getSubtitleFormat(), null);
 
@@ -153,6 +156,7 @@ public class StateUpdater extends PlayerEventListenerHelper {
     public void onTrackSelected(FormatItem track) {
         if (track.getType() == FormatItem.TYPE_VIDEO && !getController().isInPIPMode()) {
             mVideoFormat = track;
+            mSubtitleFormat = track;
             mPlayerData.setVideoFormat(track);
         } else if (track.getType() == FormatItem.TYPE_AUDIO) {
             mAudioFormat = track;
@@ -283,6 +287,9 @@ public class StateUpdater extends PlayerEventListenerHelper {
         if (getController().isInPIPMode()) {
             getController().selectFormat(FormatItem.VIDEO_SD_AVC_30);
         } else if (mVideoFormat != null) {
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
+                mVideoFormat = FormatItem.VIDEO_HD_VP9_30;
+            }
             getController().selectFormat(mVideoFormat);
         }
     }

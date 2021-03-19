@@ -5,6 +5,7 @@ import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.ExoFormatItem;
 public interface FormatItem {
     FormatItem VIDEO_FHD_AVC_30 = ExoFormatItem.fromConstants(ExoFormatItem.RESOLUTION_FHD, ExoFormatItem.FORMAT_AVC, ExoFormatItem.FPS_30);
     FormatItem VIDEO_HD_AVC_30 = ExoFormatItem.fromConstants(ExoFormatItem.RESOLUTION_HD, ExoFormatItem.FORMAT_AVC, ExoFormatItem.FPS_30);
+    FormatItem VIDEO_HD_VP9_30 = ExoFormatItem.fromConstants(ExoFormatItem.RESOLUTION_HD, ExoFormatItem.FORMAT_VP9, ExoFormatItem.FPS_30);
     FormatItem VIDEO_SD_AVC_30 = ExoFormatItem.fromConstants(ExoFormatItem.RESOLUTION_SD, ExoFormatItem.FORMAT_AVC, ExoFormatItem.FPS_30);
     FormatItem VIDEO_LQ_AVC_30 = ExoFormatItem.fromConstants(ExoFormatItem.RESOLUTION_LD, ExoFormatItem.FORMAT_AVC, ExoFormatItem.FPS_30);
     FormatItem AUDIO_HQ_MP4A = ExoFormatItem.createFakeAudioFormat(ExoFormatItem.FORMAT_MP4A);

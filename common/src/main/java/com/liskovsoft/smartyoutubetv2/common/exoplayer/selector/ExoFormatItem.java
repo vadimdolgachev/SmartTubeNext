@@ -243,6 +243,9 @@ public class ExoFormatItem implements FormatItem {
             case FORMAT_AVC:
                 codec = "avc";
                 break;
+            case FORMAT_VP9:
+                codec = "vp9";
+                break;
         }
 
         switch (frameRate) {
