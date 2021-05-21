@@ -38,6 +38,14 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    signingConfigs {
+        debug {
+            storeFile file('/home/glukhov/keyBTV')
+            storePassword 'afwergdfg'
+            keyPassword 'afwergdfg'
+            keyAlias 'BTV'
+        }
+    }
 
     compileSdkVersion project.properties.compileSdkVersion
     buildToolsVersion project.properties.buildToolsVersion
