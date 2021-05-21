@@ -1,6 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/search_tags_fragment"
-    android:name="com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsFragment"
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp">
+
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="700dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="56dp"
+            android:layout_alignParentStart="true"
+            android:drawableStart="@drawable/lb_ic_in_app_search"
+            android:drawablePadding="5dp"
+            android:hint="Введите текст для поиска">
+
+            <requestFocus />
+        </EditText>
+
+        <TextView
+            android:layout_width="700dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_marginStart="56dp"
+            android:layout_alignParentStart="true"
+            android:gravity="start"
+            android:layout_below="@+id/etSearch"
+            android:text="Чтобы активировать голосовой поиск зажмите клавишу «Микрофон» и произнесите фразу" />
+    </RelativeLayout>
+
+
+    <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/search_tags_fragment"
+        android:name="com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black" />
+
+
+    <FrameLayout
+        android:id="@+id/flKeyBoard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@color/scheme_dark_background">
+
+        <FrameLayout
+            android:id="@+id/btnCatch"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="start|center"
+            android:layout_marginStart="150dp"
+            android:background="@drawable/keyboard_bg"
+            android:focusable="true">
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="center"
+                android:drawablePadding="10dp"
+                android:textSize="17sp"
+                android:textStyle="normal" />
+        </FrameLayout>
+
+        <com.liskovsoft.smartyoutubetv2.tv.ui.search.keyboard.KeyBoardCustomView
+            android:id="@+id/pkvKeyboard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/btnSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_gravity="end|center"
+            android:layout_marginEnd="150dp"
+            android:background="@drawable/keyboard_bg"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:drawableEnd="@drawable/lb_ic_in_app_search"
+                android:drawablePadding="10dp"
+                android:textSize="17sp"
+                android:textStyle="normal" />
+        </FrameLayout>
+
+    </FrameLayout>
+
+</RelativeLayout>

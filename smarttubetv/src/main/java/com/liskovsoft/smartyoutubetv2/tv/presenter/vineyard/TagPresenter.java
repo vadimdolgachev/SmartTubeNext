@@ -1,9 +1,11 @@
 package com.liskovsoft.smartyoutubetv2.tv.presenter.vineyard;
 
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.core.content.ContextCompat;
 import androidx.leanback.widget.Presenter;
+
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
@@ -16,9 +18,11 @@ public class TagPresenter extends Presenter {
     private static int sSelectedBackgroundColor;
     private static int sSelectedTextColor;
     private final int mNextFocusUpId;
+    private View.OnFocusChangeListener mOnFocusChangeListener;
 
-    public TagPresenter(int nextFocusUpId) {
+    public TagPresenter(int nextFocusUpId, View.OnFocusChangeListener onFocusChangeListener) {
         mNextFocusUpId = nextFocusUpId;
+        mOnFocusChangeListener = onFocusChangeListener;
     }
 
     @Override
@@ -43,7 +47,8 @@ public class TagPresenter extends Presenter {
 
         cardView.setFocusable(true);
         cardView.setFocusableInTouchMode(true);
-        cardView.setNextFocusUpId(mNextFocusUpId);
+        //cardView.setNextFocusUpId(mNextFocusUpId);
+        cardView.setOnFocusChangeListener(mOnFocusChangeListener);
         updateCardBackgroundColor(cardView, false);
         updateCardTextColor(cardView, false);
         return new ViewHolder(cardView);

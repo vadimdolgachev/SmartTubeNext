@@ -33,6 +33,15 @@ if (getGradle().getStartParameter().getTaskRequests().toString().contains("Stbet
 }
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('/home/glukhov/keyBTV')
+            storePassword 'afwergdfg'
+            keyPassword 'afwergdfg'
+            keyAlias 'BTV'
+        }
+    }
+
     // FIX: Default interface methods are only supported starting with Android N (--min-api 24)
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

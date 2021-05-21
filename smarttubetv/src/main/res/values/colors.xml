@@ -32,6 +32,7 @@
     <color name="player_background">#FF000000</color>
 
     <!-- Dark color scheme -->
+    <color name="scheme_dark_background">#181818</color>
     <color name="scheme_grey_background">#181818</color>
     <color name="scheme_grey_background_dark">#181818</color>
     <color name="scheme_grey_shelf_background_dark">#000000</color>
