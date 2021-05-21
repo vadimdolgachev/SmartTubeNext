@@ -23,6 +23,8 @@ import androidx.fragment.app.Fragment;
 import androidx.leanback.R;
 import androidx.leanback.app.BrowseSupportFragment;
 import androidx.leanback.app.RowsSupportFragment;
+import androidx.leanback.widget.ArrayObjectAdapter;
+import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ObjectAdapter;
 import androidx.leanback.widget.ObjectAdapter.DataObserver;
 import androidx.leanback.widget.OnItemViewClickedListener;
@@ -38,6 +40,8 @@ import androidx.leanback.widget.SpeechRecognitionCallback;
 import androidx.leanback.widget.VerticalGridView;
 
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
+import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
+import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -198,7 +202,13 @@ public class SearchSupportFragment extends Fragment {
     };
 
     public void focusOnSearchField() {
-        mSearchTextEditor.requestFocus(); // MOD: focus on search field
+        Log.d(TAG, "focusOnSearchField: ");
+        ((SearchTagsActivity) getActivity()).visibleKeyBoard();
+    }
+
+    public void verticalGridViewFocus() {
+        Log.d(TAG, "verticalGridViewFocus: ");
+        mRowsSupportFragment.getVerticalGridView().requestFocus();
     }
 
     final Runnable mStartRecognitionRunnable = new Runnable() {
@@ -222,6 +232,7 @@ public class SearchSupportFragment extends Fragment {
     private SpeechRecognitionCallback mSpeechRecognitionCallback;
 
     private String mTitle;
+    public int etId = 0;
     private Drawable mBadgeDrawable;
     private ExternalQuery mExternalQuery;
 
@@ -293,9 +304,26 @@ public class SearchSupportFragment extends Fragment {
         super.onCreate(savedInstanceState);
     }
 
+    public void sendText(String text) {
+        mSearchTextEditor.setText(text);
+    }
+
+    public void setEtId(int id) {
+        etId = id;
+    }
+
+    public int getEtId() {
+        return etId;
+    }
+
+    public int getResultVideoSize() {
+        return ((VideoGroupObjectAdapter) ((ListRow) ((ArrayObjectAdapter) mResultAdapter).get(1)).getAdapter()).size();
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.d(TAG, "onCreateView: ");
         View root = inflater.inflate(R.layout.lb_search_fragment, container, false);
 
         FrameLayout searchFrame = (FrameLayout) root.findViewById(R.id.lb_search_frame);
@@ -320,8 +348,10 @@ public class SearchSupportFragment extends Fragment {
                 if (DEBUG) Log.v(TAG, String.format("onSearchQuerySubmit %s", query));
                 submitQuery(query);
                 mScrollToEndAfterTextChanged = true;
-                InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                inputMethodManager.hideSoftInputFromWindow(mSearchBar.getWindowToken(), 0);
+                if (BuildConfig.FLAVOR.equals("stbolshoetv")) {
+                    InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputMethodManager.hideSoftInputFromWindow(mSearchBar.getWindowToken(), 0);
+                }
             }
 
             @Override
@@ -333,6 +363,7 @@ public class SearchSupportFragment extends Fragment {
         });
         mSearchBar.setSpeechRecognitionCallback(mSpeechRecognitionCallback);
         mSearchBar.setPermissionListener(mPermissionListener);
+
         applyExternalQuery();
 
         // MOD: inner search bar views for improved focus handling
@@ -394,6 +425,7 @@ public class SearchSupportFragment extends Fragment {
                 mSpeechOrbView.showNotListening();
                 if (mSpeechRecognizer != null) {
                     mSpeechRecognizer.stopListening();
+                    mSpeechOrbView.setFocusable(false);
                 }
             }
         });
@@ -440,6 +472,28 @@ public class SearchSupportFragment extends Fragment {
         if (null != mProvider) {
             onSetSearchResultProvider();
         }
+        mSearchTextEditor = mSearchBar.findViewById(R.id.lb_search_text_editor);
+
+        mSearchTextEditor.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (mScrollToEndAfterTextChanged) {
+                    Selection.setSelection(mSearchTextEditor.getText(), mSearchTextEditor.length());
+                    mScrollToEndAfterTextChanged = false;
+                    ((SearchTagsActivity) getActivity()).setTextEtSeach(mSearchTextEditor.getText().toString());
+                }
+            }
+        });
         return root;
     }
 
@@ -470,6 +524,7 @@ public class SearchSupportFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume: ");
         mIsPaused = false;
         if (mSpeechRecognitionCallback == null && null == mSpeechRecognizer) {
             mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(
@@ -483,12 +538,21 @@ public class SearchSupportFragment extends Fragment {
             mSearchBar.startRecognition();
         } else {
             // Ensure search bar state consistency when using external recognizer
-//            mSearchBar.stopRecognition();
+            mSearchBar.stopRecognition();
         }
+        mSearchBar.setVisibility(View.GONE);
+        mSpeechOrbView.setFocusable(false);
+        /*mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ((SearchTagsActivity) getActivity()).visibleKeyBoard();
+            }
+        }, 500);*/
     }
 
     @Override
     public void onPause() {
+        releaseRecognizer();
         mIsPaused = true;
         super.onPause();
     }
@@ -775,6 +839,15 @@ public class SearchSupportFragment extends Fragment {
         int position = mRowsSupportFragment != null ? mRowsSupportFragment.getSelectedPosition() : -1;
         mSearchBar.setVisibility(position <=0 || mResultAdapter == null
                 || mResultAdapter.size() == 0 ? View.VISIBLE : View.GONE);
+
+        if (position <= 0 || mResultAdapter == null || mResultAdapter.size() == 0) {
+            ((SearchTagsActivity) getActivity()).visibleEtSearch();
+
+        } else {
+            ((SearchTagsActivity) getActivity()).hideKeyBoard();
+            ((SearchTagsActivity) getActivity()).hideEtSearch();
+        }
+
     }
 
     void updateSearchBarNextFocusId() {
@@ -865,6 +938,9 @@ public class SearchSupportFragment extends Fragment {
     }
 
     public void pressKeySearch() {
+        Log.d(TAG, "pressKeySearch: " + mSearchBar.hasFocus());
+        mSpeechOrbView.setFocusable(true);
+        mSearchBar.requestFocus();
         if (mSearchBar.hasFocus() && !mSearchBar.isRecognizing()) {
             mSpeechOrbView.showListening();
             mSpeechOrbView.callOnClick();

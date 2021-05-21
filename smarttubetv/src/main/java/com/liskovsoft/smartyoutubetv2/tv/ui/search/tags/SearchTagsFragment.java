@@ -57,11 +57,11 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
 
     @Override
     public void updateSearch(VideoGroup group) {
-        freeze(true);
         mItemResultsAdapter.append(group);
-        freeze(false);
+        ((SearchTagsActivity) getActivity()).hideEtSearch();
+        ((SearchTagsActivity) getActivity()).hideKeyBoard();
 
-        attachAdapter(1, mItemResultsAdapter);
+        verticalGridViewFocus();
     }
 
     @Override
@@ -79,7 +79,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     public void startVoiceRecognition() {
         startSearch(null, true);
     }
-    
+
     private void startSearch(String searchText, boolean enableRecognition) {
         mNewQuery = null;
 
@@ -106,7 +106,6 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     public boolean onQueryTextChange(String newQuery) {
         loadSearchTags(newQuery);
 
-        // Avoid auto commit to prevent search field focus loss.
         if (isVoiceQuery(newQuery)) {
             loadSearchResult(newQuery);
         }

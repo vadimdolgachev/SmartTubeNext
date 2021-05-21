@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@drawable/keyboard_bg"
+    android:id="@+id/flKeyContainer"
+    android:focusable="true"
+    android:layout_margin="4dp"
+    android:layout_width="35dp"
+    android:layout_height="35dp">
+
+    <TextView
+        android:id="@+id/tvButtonText"
+        android:textColor="@color/white"
+        android:gravity="center"
+        android:textSize="22sp"
+        android:text="1"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</FrameLayout>

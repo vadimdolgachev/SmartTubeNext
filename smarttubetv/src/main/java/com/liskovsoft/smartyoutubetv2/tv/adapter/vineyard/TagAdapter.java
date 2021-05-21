@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.adapter.vineyard;
 
 import android.content.Context;
+import android.view.View;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.vineyard.TagPresenter;
@@ -10,8 +11,8 @@ import java.util.List;
 
 public class TagAdapter extends PaginationAdapter {
 
-    public TagAdapter(Context context, String tag, int nextFocusUpId) {
-        super(context, new TagPresenter(nextFocusUpId), tag);
+    public TagAdapter(Context context, String tag, int nextFocusUpId, View.OnFocusChangeListener onFocusChangeListener) {
+        super(context, new TagPresenter(nextFocusUpId, onFocusChangeListener), tag);
     }
 
     @Override
