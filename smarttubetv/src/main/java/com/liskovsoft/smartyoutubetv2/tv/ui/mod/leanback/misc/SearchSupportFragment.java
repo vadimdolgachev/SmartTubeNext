@@ -271,7 +271,7 @@ public class SearchSupportFragment extends Fragment {
         return createArgs(args, query, null);
     }
 
-    public static Bundle createArgs(Bundle args, String query, String title)  {
+    public static Bundle createArgs(Bundle args, String query, String title) {
         if (args == null) {
             args = new Bundle();
         }
@@ -348,8 +348,10 @@ public class SearchSupportFragment extends Fragment {
                 if (DEBUG) Log.v(TAG, String.format("onSearchQuerySubmit %s", query));
                 submitQuery(query);
                 mScrollToEndAfterTextChanged = true;
-                InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                inputMethodManager.hideSoftInputFromWindow(mSearchBar.getWindowToken(), 0);
+                if (BuildConfig.FLAVOR.equals("stbolshoetv")) {
+                    InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputMethodManager.hideSoftInputFromWindow(mSearchBar.getWindowToken(), 0);
+                }
             }
 
             @Override
@@ -364,55 +366,6 @@ public class SearchSupportFragment extends Fragment {
 
         applyExternalQuery();
 
-        // MOD: inner search bar views for improved focus handling
-
-        mSearchTextEditor = mSearchBar.findViewById(R.id.lb_search_text_editor);
-        mSearchTextEditor.setSelectAllOnFocus(true); // easy clear previous search
-        mSearchTextEditor.setOnFocusChangeListener((v, focused) -> {
-            Log.d(TAG, "on search field focused");
-            if (focused && mRowsSupportFragment != null && mRowsSupportFragment.getVerticalGridView() != null) {
-                // scroll cursor to end after transition from lb_search_bar_speech_orb
-                mScrollToEndAfterTextChanged = mSearchTextEditor.getText().length() == 0;
-                Selection.setSelection(mSearchTextEditor.getText(), mSearchTextEditor.length());
-
-                mRowsSupportFragment.getVerticalGridView().clearFocus();
-
-                if (getContext() != null) {
-                    // https://stackoverflow.com/questions/5105354/how-to-show-soft-keyboard-when-edittext-is-focused
-                    InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-                }
-            }
-        });
-
-        mSearchTextEditor.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (mScrollToEndAfterTextChanged) {
-                    Selection.setSelection(mSearchTextEditor.getText(), mSearchTextEditor.length());
-                    mScrollToEndAfterTextChanged = false;
-                }
-            }
-        });
-        //mSearchTextEditor.setOnClickListener(v -> {
-        //    Log.d(TAG, "on search field clicked");
-        //
-        //    if (getContext() != null) {
-        //        // https://stackoverflow.com/questions/5105354/how-to-show-soft-keyboard-when-edittext-is-focused
-        //        InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        //        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-        //    }
-        //});
 
         mSpeechOrbView = mSearchBar.findViewById(R.id.lb_search_bar_speech_orb);
         mSpeechOrbView.setOnFocusChangeListener((v, hasFocus) -> {
@@ -428,9 +381,6 @@ public class SearchSupportFragment extends Fragment {
             }
         });
         mSpeechOrbView.setClickable(false);
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N_MR1) {
-            mSpeechOrbView.setVisibility(View.INVISIBLE);
-        }
         // End MOD
 
         readArguments(getArguments());
@@ -550,14 +500,9 @@ public class SearchSupportFragment extends Fragment {
 
     @Override
     public void onPause() {
+        releaseRecognizer();
         mIsPaused = true;
         super.onPause();
-    }
-
-    @Override
-    public void onStop() {
-        releaseRecognizer();
-        super.onStop();
     }
 
     @Override
@@ -623,7 +568,7 @@ public class SearchSupportFragment extends Fragment {
      * Sets an item selection listener for the results.
      *
      * @param listener The item selection listener to be invoked when an item in
-     *        the search results is selected.
+     *                 the search results is selected.
      */
     public void setOnItemViewSelectedListener(OnItemViewSelectedListener listener) {
         mOnItemViewSelectedListener = listener;
@@ -633,7 +578,7 @@ public class SearchSupportFragment extends Fragment {
      * Sets an item clicked listener for the results.
      *
      * @param listener The item clicked listener to be invoked when an item in
-     *        the search results is clicked.
+     *                 the search results is clicked.
      */
     public void setOnItemViewClickedListener(OnItemViewClickedListener listener) {
         if (listener != mOnItemViewClickedListener) {
@@ -714,7 +659,7 @@ public class SearchSupportFragment extends Fragment {
      * a list of query completions that the system will show in the IME.
      *
      * @param completions A list of completions to show in the IME. Setting to
-     *        null or empty will clear the list.
+     *                    null or empty will clear the list.
      */
     public void displayCompletions(List<String> completions) {
         mSearchBar.displayCompletions(completions);
@@ -725,7 +670,7 @@ public class SearchSupportFragment extends Fragment {
      * a list of query completions that the system will show in the IME.
      *
      * @param completions A list of completions to show in the IME. Setting to
-     *        null or empty will clear the list.
+     *                    null or empty will clear the list.
      */
     public void displayCompletions(CompletionInfo[] completions) {
         mSearchBar.displayCompletions(completions);
@@ -734,8 +679,9 @@ public class SearchSupportFragment extends Fragment {
     /**
      * Sets this callback to have the fragment pass speech recognition requests
      * to the activity rather than using a SpeechRecognizer object.
+     *
      * @deprecated Launching voice recognition activity is no longer supported. App should declare
-     *             android.permission.RECORD_AUDIO in AndroidManifest file.
+     * android.permission.RECORD_AUDIO in AndroidManifest file.
      */
     @Deprecated
     public void setSpeechRecognitionCallback(SpeechRecognitionCallback callback) {
@@ -754,7 +700,7 @@ public class SearchSupportFragment extends Fragment {
      * {@link SearchResultProvider#onQueryTextSubmit onQueryTextSubmit} will be
      * called on the provider if it is set.
      *
-     * @param query The search query to set.
+     * @param query  The search query to set.
      * @param submit Whether to submit the query.
      */
     public void setSearchQuery(String query, boolean submit) {
@@ -796,7 +742,7 @@ public class SearchSupportFragment extends Fragment {
      * <li>{@link RecognizerIntent#EXTRA_PARTIAL_RESULTS} set to true</li>
      * <li>{@link RecognizerIntent#EXTRA_PROMPT} set to the search bar hint text</li>
      * </ul>
-     *
+     * <p>
      * For handling the intent returned from the service, see
      * {@link #setSearchQuery(Intent, boolean)}.
      */
@@ -826,7 +772,7 @@ public class SearchSupportFragment extends Fragment {
         }
     }
 
-    void queryComplete() {
+    public void queryComplete() {
         if (DEBUG) Log.v(TAG, "queryComplete");
         mStatus |= QUERY_COMPLETE;
         focusOnResults();
@@ -834,7 +780,7 @@ public class SearchSupportFragment extends Fragment {
 
     void updateSearchBarVisibility() {
         int position = mRowsSupportFragment != null ? mRowsSupportFragment.getSelectedPosition() : -1;
-        mSearchBar.setVisibility(position <=0 || mResultAdapter == null
+        mSearchBar.setVisibility(position <= 0 || mResultAdapter == null
                 || mResultAdapter.size() == 0 ? View.VISIBLE : View.GONE);
 
         if (position <= 0 || mResultAdapter == null || mResultAdapter.size() == 0) {
@@ -863,8 +809,8 @@ public class SearchSupportFragment extends Fragment {
                 && mRowsSupportFragment != null && mRowsSupportFragment.getAdapter() == mResultAdapter) {
             focusOnResults();
         } else {
-            // Fixed moving focus to voice button when activity stated
-            //mSearchBar.requestFocus();
+            Log.d(TAG, "ТУТ: ");
+            mSearchBar.requestFocus();
         }
     }
 
@@ -877,12 +823,6 @@ public class SearchSupportFragment extends Fragment {
         // MOD: hide kbd on back properly
         if (mRowsSupportFragment.getVerticalGridView().requestFocus()) {
             mStatus &= ~RESULTS_CHANGED;
-        }
-    }
-
-    protected void selectAllText() {
-        if (mSearchTextEditor != null) {
-            mSearchTextEditor.selectAll();
         }
     }
 
