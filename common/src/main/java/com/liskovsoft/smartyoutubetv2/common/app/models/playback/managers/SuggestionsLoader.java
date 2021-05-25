@@ -7,6 +7,7 @@ import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.smartyoutubetv2.common.app.amplitude.Analytics;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
@@ -88,6 +89,8 @@ public class SuggestionsLoader extends PlayerEventListenerHelper {
             Log.e(TAG, "loadSuggestions: video is null");
             return;
         }
+        Analytics.initAmplitude(getActivity().getApplicationContext(), getActivity().getApplication());
+        Analytics.launchVideo(getActivity().getApplicationContext().getPackageName(), video.title, video.studio, video.isLive, video.videoUrl, video.badge);
 
         RxUtils.disposeActions(mMetadataAction, mScrollAction);
 

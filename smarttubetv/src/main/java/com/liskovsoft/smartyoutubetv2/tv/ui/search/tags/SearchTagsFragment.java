@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import androidx.annotation.Nullable;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.smartyoutubetv2.common.app.amplitude.Analytics;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.MediaServiceSearchTagProvider;
@@ -16,6 +17,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.vineyard.SearchTagsFragmentBase;
 
 import java.util.Locale;
+import java.util.Objects;
 
 public class SearchTagsFragment extends SearchTagsFragmentBase {
     private static final String TAG = SearchTagsFragment.class.getSimpleName();
@@ -127,6 +129,8 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
         if (!TextUtils.isEmpty(searchQuery) && !searchQuery.equals(mSearchQuery)) {
             mSearchQuery = searchQuery;
             mSearchPresenter.onSearch(searchQuery);
+            Analytics.initAmplitude(getContext(), Objects.requireNonNull(getActivity()).getApplication());
+            Analytics.searchVideos(Objects.requireNonNull(getContext()).getPackageName(), searchQuery);
         }
     }
 

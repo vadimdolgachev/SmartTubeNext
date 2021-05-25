@@ -33,7 +33,7 @@ public class SearchTagsActivity extends LeanbackActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fragment_search_tags);
         keyBoardCustomView = (KeyBoardCustomView) findViewById(R.id.pkvKeyboard);
-        keyBoardCustomView.initAlphabet(Alphabet.en_en);
+        keyBoardCustomView.initAlphabet(Alphabet.ru_ru);
 
         btnSearch = (FrameLayout) findViewById(R.id.btnSearch);
         btnCatch = (FrameLayout) findViewById(R.id.btnCatch);
@@ -50,7 +50,6 @@ public class SearchTagsActivity extends LeanbackActivity {
             @Override
             public void onFocusChange(View view, boolean b) {
                 if (b) {
-                    Log.d(TAG, "onFocusChange: ");
                     visibleKeyBoard();
                 }
             }

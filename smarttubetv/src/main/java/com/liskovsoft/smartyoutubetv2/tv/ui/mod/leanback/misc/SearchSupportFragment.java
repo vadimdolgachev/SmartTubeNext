@@ -367,7 +367,6 @@ public class SearchSupportFragment extends Fragment {
         applyExternalQuery();
 
 
-
         mSpeechOrbView = mSearchBar.findViewById(R.id.lb_search_bar_speech_orb);
         mSpeechOrbView.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
@@ -377,6 +376,7 @@ public class SearchSupportFragment extends Fragment {
                 mSpeechOrbView.showNotListening();
                 if (mSpeechRecognizer != null) {
                     mSpeechRecognizer.stopListening();
+                    mSpeechOrbView.setFocusable(false);
                 }
             }
         });
@@ -489,6 +489,7 @@ public class SearchSupportFragment extends Fragment {
             mSearchBar.stopRecognition();
         }
         mSearchBar.setVisibility(View.GONE);
+        mSpeechOrbView.setFocusable(false);
         /*mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -875,6 +876,7 @@ public class SearchSupportFragment extends Fragment {
 
     public void pressKeySearch() {
         Log.d(TAG, "pressKeySearch: " + mSearchBar.hasFocus());
+        mSpeechOrbView.setFocusable(true);
         mSearchBar.requestFocus();
         if (mSearchBar.hasFocus() && !mSearchBar.isRecognizing()) {
             mSpeechOrbView.showListening();
