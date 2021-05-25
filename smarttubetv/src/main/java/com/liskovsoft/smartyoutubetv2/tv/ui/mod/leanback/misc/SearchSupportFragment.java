@@ -20,9 +20,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 
 import androidx.fragment.app.Fragment;
-import androidx.leanback.R;
 import androidx.leanback.app.BrowseSupportFragment;
-import androidx.leanback.app.RowsSupportFragment;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ObjectAdapter;
@@ -40,8 +38,10 @@ import androidx.leanback.widget.SpeechRecognitionCallback;
 import androidx.leanback.widget.VerticalGridView;
 
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
+import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.base.RowsSupportFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,8 +73,8 @@ public class SearchSupportFragment extends Fragment {
 
     private static final String EXTRA_LEANBACK_BADGE_PRESENT = "LEANBACK_BADGE_PRESENT";
     private static final String ARG_PREFIX = SearchSupportFragment.class.getCanonicalName();
-    private static final String ARG_QUERY =  ARG_PREFIX + ".query";
-    private static final String ARG_TITLE = ARG_PREFIX  + ".title";
+    private static final String ARG_QUERY = ARG_PREFIX + ".query";
+    private static final String ARG_TITLE = ARG_PREFIX + ".title";
 
     static final long SPEECH_RECOGNITION_DELAY_MS = 300;
 
@@ -348,10 +348,8 @@ public class SearchSupportFragment extends Fragment {
                 if (DEBUG) Log.v(TAG, String.format("onSearchQuerySubmit %s", query));
                 submitQuery(query);
                 mScrollToEndAfterTextChanged = true;
-                if (BuildConfig.FLAVOR.equals("stbolshoetv")) {
-                    InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputMethodManager.hideSoftInputFromWindow(mSearchBar.getWindowToken(), 0);
-                }
+                InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.hideSoftInputFromWindow(mSearchBar.getWindowToken(), 0);
             }
 
             @Override
@@ -552,7 +550,6 @@ public class SearchSupportFragment extends Fragment {
 
     @Override
     public void onPause() {
-        releaseRecognizer();
         mIsPaused = true;
         super.onPause();
     }
@@ -856,8 +853,8 @@ public class SearchSupportFragment extends Fragment {
         }
         final int viewId = (mResultAdapter.size() == 0 || mRowsSupportFragment == null
                 || mRowsSupportFragment.getVerticalGridView() == null)
-                        ? 0 : mRowsSupportFragment.getVerticalGridView().getId();
-        
+                ? 0 : mRowsSupportFragment.getVerticalGridView().getId();
+
         mSearchBar.setNextFocusDownId(viewId);
     }
 
