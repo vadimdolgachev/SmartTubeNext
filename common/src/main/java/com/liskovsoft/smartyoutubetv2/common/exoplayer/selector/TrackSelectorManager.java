@@ -46,7 +46,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
             Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1 ? 1920 : 3840);
     private final static float MAX_FRAME_RATE =
             Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1 ? 30f : 60f;
-    private static final String DEFAULT_LANGUAGE = "en";
+    private static final String DEFAULT_LANGUAGE = "original"; // original, descriptive, dubbed, secondary
     private final Map<String, Integer> mBlacklist = new HashMap<>();
 
     private DefaultTrackSelector mTrackSelector;
@@ -650,7 +650,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
      * Trying to filter languages preferred by the user
      */
     private MediaTrack[][] filterByLanguage(MediaTrack[][] trackGroupList, MediaTrack originTrack) {
-        if (!(originTrack instanceof AudioTrack) || trackGroupList.length <= 1) {
+        if (!(originTrack instanceof AudioTrack) || trackGroupList.length <= 2) { // non-translated list has max 2 groups
             return trackGroupList;
         }
 
@@ -659,16 +659,13 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         String resultLanguage = null;
         String originLanguage = null;
 
-        if (!TextUtils.isEmpty(audioLanguage) && originTrack.isSaved) { // skip manual selection
-            resultLanguage = audioLanguage;
-        }
-
         if (originTrack.format != null && !TextUtils.isEmpty(originTrack.format.language)) {
             originLanguage = originTrack.format.language;
         }
 
-        if (resultLanguage == null && originLanguage == null) {
-            return trackGroupList;
+        if (originTrack.isSaved) {
+            resultLanguage = TextUtils.isEmpty(audioLanguage) ? null : audioLanguage; // None/Default selection ("")
+            originLanguage = null; // fallback to the default language
         }
 
         List<MediaTrack[]> resultTracks = null;
@@ -701,7 +698,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                         }
 
                         originTracks.add(trackGroup);
-                    } else if (Helpers.startsWith(mediaTrack.format.language, DEFAULT_LANGUAGE)) { // format language: en-us
+                    } else if (Helpers.contains(mediaTrack.format.language, DEFAULT_LANGUAGE)) { // original, descriptive, dubbed, secondary
                         if (resultTracksFallback == null) {
                             resultTracksFallback = new ArrayList<>();
                         }
