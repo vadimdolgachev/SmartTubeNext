@@ -108,6 +108,9 @@ public class PlaybackActivity extends LeanbackActivity {
         } else if (keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
             mPlaybackFragment.fastForward();
             return true;
+        } else if (keyCode == KeyEvent.KEYCODE_PROG_RED) {
+            mPlaybackFragment.setDebugButtonState(!mPlaybackFragment.isDebugInfoShown());
+            mPlaybackFragment.showDebugInfo(!mPlaybackFragment.isDebugInfoShown());
         }
 
         return super.onKeyDown(keyCode, event);
