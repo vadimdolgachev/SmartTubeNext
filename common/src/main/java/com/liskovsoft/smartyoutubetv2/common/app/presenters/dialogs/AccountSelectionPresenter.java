@@ -3,19 +3,15 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs;
 import android.annotation.SuppressLint;
 import android.content.Context;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
-import com.liskovsoft.sharedutils.mylogger.Log;
-import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
-import com.liskovsoft.smartyoutubetv2.common.exoplayer.ExoMediaSourceFactory;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
@@ -25,14 +21,11 @@ import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.disposables.Disposable;
-
 public class AccountSelectionPresenter extends BasePresenter<Void> {
     private static final String TAG = AccountSelectionPresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static AccountSelectionPresenter sInstance;
     private final SignInService mSignInService;
-    private Disposable mAccountsAction;
 
     public AccountSelectionPresenter(Context context) {
         super(context);
@@ -60,11 +53,7 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
             return;
         }
 
-        mAccountsAction = mSignInService.getAccountsObserve()
-                .subscribe(
-                        accounts -> createAndShowDialog(accounts, force),
-                        error -> Log.e(TAG, "Get accounts error: %s", error.getMessage())
-                );
+        createAndShowDialog(mSignInService.getAccounts(), force);
     }
 
     public void nextAccountOrDialog() {
@@ -72,7 +61,6 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
     }
 
     public void unhold() {
-        RxHelper.disposeActions(mAccountsAction);
         sInstance = null;
     }
 
@@ -135,9 +123,7 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
 
     public void selectAccount(Account account) {
         mSignInService.selectAccount(account);
-        //BrowsePresenter.instance(getContext()).refresh(false);
         Utils.updateChannels(getContext());
-        //BrowsePresenter.instance(getContext()).onViewInitialized(); // reset state
 
         // Account history might be turned off (common issue).
         GeneralData generalData = GeneralData.instance(getContext());

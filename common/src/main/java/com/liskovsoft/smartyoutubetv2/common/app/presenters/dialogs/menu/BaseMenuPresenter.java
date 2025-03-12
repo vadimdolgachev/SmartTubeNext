@@ -1,10 +1,10 @@
 package com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu;
 
 import android.content.Context;
-import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.rx.RxHelper;
@@ -302,10 +302,7 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
                 } else {
                     AppDialogUtil.showConfirmationDialog(getContext(), getContext().getString(R.string.remove_playlist), () -> {
                         removePlaylist(video);
-                        if (getCallback() != null) {
-                            getCallback().onItemAction(getVideo(), VideoMenuCallback.ACTION_REMOVE);
-                            closeDialog();
-                        }
+                        closeDialog();
                     });
                 }
             } else {
@@ -317,16 +314,21 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
     private void removePlaylist(Video video) {
         MediaItemService manager = YouTubeMediaItemService.instance();
         Observable<Void> action = manager.removePlaylistObserve(video.playlistId);
-        GeneralData.instance(getContext()).setPlaylistOrder(video.playlistId, -1);
         RxHelper.execute(action,
                 (error) -> MessageHelpers.showMessage(getContext(), error.getLocalizedMessage()),
-                () -> MessageHelpers.showMessage(getContext(), getContext().getString(R.string.removed_from_playlists))
+                () -> {
+                    if (getCallback() != null) {
+                        getCallback().onItemAction(getVideo(), VideoMenuCallback.ACTION_REMOVE);
+                    }
+                    GeneralData.instance(getContext()).setPlaylistOrder(video.playlistId, -1);
+                    MessageHelpers.showMessage(getContext(), getContext().getString(R.string.removed_from_playlists));
+                }
         );
     }
 
     private void savePlaylist(Video video) {
         MediaItemService manager = YouTubeMediaItemService.instance();
-        Observable<Void> action = manager.savePlaylistObserve(video.playlistId);
+        Observable<Void> action = video.mediaItem != null ? manager.savePlaylistObserve(video.mediaItem) : manager.savePlaylistObserve(video.playlistId);
         RxHelper.execute(action,
                 (error) -> MessageHelpers.showMessage(getContext(), error.getLocalizedMessage()),
                 () -> MessageHelpers.showMessage(getContext(), getContext().getString(R.string.saved_to_playlists))
@@ -388,7 +390,9 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
                 null,
                 newValue -> {
                     MediaItemService manager = YouTubeMediaItemService.instance();
-                    Observable<Void> action = manager.createPlaylistObserve(newValue, video.hasVideo() ? video.videoId : null);
+                    Observable<Void> action = video.mediaItem != null ?
+                            manager.createPlaylistObserve(newValue, video.hasVideo() ? video.mediaItem : null) :
+                            manager.createPlaylistObserve(newValue, video.hasVideo() ? video.videoId : null);
                     RxHelper.execute(
                             action,
                             (error) -> MessageHelpers.showMessage(getContext(), error.getLocalizedMessage()),
@@ -425,42 +429,55 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
     }
 
     private void showRenamePlaylistDialog(Video video) {
+        if (video.hasPlaylist()) {
+            showRenamePlaylistDialogSimple(video);
+        } else {
+            showRenamePlaylistDialogUploads(video);
+        }
+    }
+
+    private void showRenamePlaylistDialogUploads(Video video) {
         MessageHelpers.showMessage(getContext(), R.string.wait_data_loading);
         mServiceManager.loadChannelUploads(
                 video,
                 mediaGroup -> {
-                    closeDialog();
-
                     if (mediaGroup == null) { // crash fix
                         return;
                     }
 
                     MediaItem firstItem = mediaGroup.getMediaItems().get(0);
+                    video.playlistId = firstItem.getPlaylistId();
 
-                    if (firstItem.getPlaylistId() == null) {
-                        MessageHelpers.showMessage(getContext(), R.string.cant_rename_empty_playlist);
-                        return;
-                    }
-
-                    SimpleEditDialog.show(
-                            getContext(),
-                            getContext().getString(R.string.rename_playlist),
-                            video.getTitle(),
-                            newValue -> {
-                                MediaItemService manager = YouTubeMediaItemService.instance();
-                                Observable<Void> action = manager.renamePlaylistObserve(firstItem.getPlaylistId(), newValue);
-                                RxHelper.execute(
-                                        action,
-                                        (error) -> MessageHelpers.showMessage(getContext(), R.string.owned_playlist_warning),
-                                        () -> {
-                                            video.title = newValue;
-                                            BrowsePresenter.instance(getContext()).syncItem(video);
-                                        }
-                                );
-                                return true;
-                            });
+                    showRenamePlaylistDialogSimple(video);
                 }
         );
+    }
+
+    private void showRenamePlaylistDialogSimple(Video video) {
+        if (video.getPlaylistId() == null) {
+            MessageHelpers.showMessage(getContext(), R.string.cant_rename_empty_playlist);
+            return;
+        }
+
+        closeDialog();
+
+        SimpleEditDialog.show(
+                getContext(),
+                getContext().getString(R.string.rename_playlist),
+                video.getTitle(),
+                newValue -> {
+                    MediaItemService manager = YouTubeMediaItemService.instance();
+                    Observable<Void> action = manager.renamePlaylistObserve(video.getPlaylistId(), newValue);
+                    RxHelper.execute(
+                            action,
+                            (error) -> MessageHelpers.showMessage(getContext(), R.string.owned_playlist_warning),
+                            () -> {
+                                video.title = newValue;
+                                BrowsePresenter.instance(getContext()).syncItem(video);
+                            }
+                    );
+                    return true;
+                });
     }
 
     protected void appendToggleHistoryButton() {

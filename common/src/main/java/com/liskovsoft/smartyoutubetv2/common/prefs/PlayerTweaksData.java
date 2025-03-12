@@ -92,14 +92,14 @@ public class PlayerTweaksData implements ProfileChangeListener {
     private boolean mIsChapterNotificationEnabled;
     private boolean mIsPlayerUiOnNextEnabled;
     private boolean mIsPlayerAutoVolumeEnabled;
-    private boolean mIsPlayerGlobalFocusEnabled;
+    private boolean mIsSimplePlayerNavigationEnabled;
     private boolean mIsUnsafeAudioFormatsEnabled;
     private boolean mIsLoopShortsEnabled;
     private boolean mIsQuickSkipShortsEnabled;
     private boolean mIsQuickSkipVideosEnabled;
     private boolean mIsOculusQuestFixEnabled;
-    private boolean mIsPlaybackErrorsFixEnabled;
-    private boolean mIsNetworkErrorFixingDisabled;
+    private boolean mIsPersistentAntiBotFixEnabled;
+    private boolean mIsAudioFocusEnabled;
 
     private PlayerTweaksData(Context context) {
         mPrefs = AppPrefs.instance(context);
@@ -393,12 +393,12 @@ public class PlayerTweaksData implements ProfileChangeListener {
         persistData();
     }
 
-    public boolean isPlaybackErrorsFixEnabled() {
-        return mIsPlaybackErrorsFixEnabled;
+    public boolean isPersistentAntiBotFixEnabled() {
+        return mIsPersistentAntiBotFixEnabled;
     }
 
-    public void enablePlaybackErrorsFix(boolean enable) {
-        mIsPlaybackErrorsFixEnabled = enable;
+    public void enablePersistentAntiBotFix(boolean enable) {
+        mIsPersistentAntiBotFixEnabled = enable;
         persistData();
     }
 
@@ -540,13 +540,22 @@ public class PlayerTweaksData implements ProfileChangeListener {
         return mIsPlayerAutoVolumeEnabled;
     }
 
-    public void enablePlayerGlobalFocus(boolean enable) {
-        mIsPlayerGlobalFocusEnabled = enable;
+    public void enableAudioFocus(boolean enable) {
+        mIsAudioFocusEnabled = enable;
         persistData();
     }
 
-    public boolean isPlayerGlobalFocusEnabled() {
-        return mIsPlayerGlobalFocusEnabled;
+    public boolean isAudioFocusEnabled() {
+        return mIsAudioFocusEnabled;
+    }
+
+    public void enableSimplePlayerNavigation(boolean enable) {
+        mIsSimplePlayerNavigationEnabled = enable;
+        persistData();
+    }
+
+    public boolean isSimplePlayerNavigationEnabled() {
+        return mIsSimplePlayerNavigationEnabled;
     }
 
     public void enableLoopShorts(boolean enable) {
@@ -582,15 +591,6 @@ public class PlayerTweaksData implements ProfileChangeListener {
 
     public boolean isHighBitrateFormatsEnabled() {
         return MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_EXTENDED_HLS);
-    }
-
-    public void disableNetworkErrorFixing(boolean disable) {
-        mIsNetworkErrorFixingDisabled = disable;
-        persistData();
-    }
-
-    public boolean isNetworkErrorFixingDisabled() {
-        return mIsNetworkErrorFixingDisabled;
     }
 
     public void preferIPv4Dns(boolean prefer) {
@@ -633,7 +633,8 @@ public class PlayerTweaksData implements ProfileChangeListener {
         mIsSpeedButtonOldBehaviorEnabled = Helpers.parseBoolean(split, 23, false);
         mIsButtonLongClickEnabled = Helpers.parseBoolean(split, 24, true);
         mIsLongSpeedListEnabled = Helpers.parseBoolean(split, 25, true);
-        mPlayerDataSource = Helpers.parseInt(split, 26, Utils.skipCronet() ? PLAYER_DATA_SOURCE_DEFAULT : PLAYER_DATA_SOURCE_CRONET);
+        //mPlayerDataSource = Helpers.parseInt(split, 26, Utils.skipCronet() ? PLAYER_DATA_SOURCE_DEFAULT : PLAYER_DATA_SOURCE_CRONET);
+        mPlayerDataSource = Helpers.parseInt(split, 26, PLAYER_DATA_SOURCE_DEFAULT);
         mUnlockAllFormats = Helpers.parseBoolean(split, 27, false);
         mIsDashUrlStreamsForced = Helpers.parseBoolean(split, 28, false);
         mIsSonyFrameDropFixEnabled = Helpers.parseBoolean(split, 29, false);
@@ -649,7 +650,7 @@ public class PlayerTweaksData implements ProfileChangeListener {
         mIsBootScreenOffEnabled = Helpers.parseBoolean(split, 38, false);
         mIsPlayerUiOnNextEnabled = Helpers.parseBoolean(split, 39, false);
         mIsPlayerAutoVolumeEnabled = Helpers.parseBoolean(split, 40, true);
-        mIsPlayerGlobalFocusEnabled = Helpers.parseBoolean(split, 41, true);
+        mIsSimplePlayerNavigationEnabled = Helpers.parseBoolean(split, 41, true);
         mIsUnsafeAudioFormatsEnabled = Helpers.parseBoolean(split, 42, true);
         //mIsHighBitrateFormatsEnabled = Helpers.parseBoolean(split, 43, false);
         mIsLoopShortsEnabled = Helpers.parseBoolean(split, 44, true);
@@ -661,9 +662,10 @@ public class PlayerTweaksData implements ProfileChangeListener {
         // mPlayerDataSource = Helpers.parseInt(split, 48, PLAYER_DATA_SOURCE_DEFAULT);
         mIsExtraLongSpeedListEnabled = Helpers.parseBoolean(split, 49, false);
         mIsQuickSkipVideosEnabled = Helpers.parseBoolean(split, 50, false);
-        mIsNetworkErrorFixingDisabled = Helpers.parseBoolean(split, 51, false);
+        //mIsNetworkErrorFixingDisabled = Helpers.parseBoolean(split, 51, false);
         mIsCommentsPlacedLeft = Helpers.parseBoolean(split, 52, false);
-        mIsPlaybackErrorsFixEnabled = Helpers.parseBoolean(split, 53, false);
+        mIsPersistentAntiBotFixEnabled = Helpers.parseBoolean(split, 53, false);
+        mIsAudioFocusEnabled = Helpers.parseBoolean(split, 54, true);
 
         updateDefaultValues();
     }
@@ -679,10 +681,10 @@ public class PlayerTweaksData implements ProfileChangeListener {
                 mIsSpeedButtonOldBehaviorEnabled, mIsButtonLongClickEnabled, mIsLongSpeedListEnabled, mPlayerDataSource, mUnlockAllFormats,
                 mIsDashUrlStreamsForced, mIsSonyFrameDropFixEnabled, mIsBufferOnStreamsDisabled, mIsSectionPlaylistEnabled,
                 mIsScreenOffTimeoutEnabled, mScreenOffTimeoutSec, mIsUIAnimationsEnabled, mIsLikesCounterEnabled, mIsChapterNotificationEnabled,
-                mScreenOffDimmingPercents, mIsBootScreenOffEnabled, mIsPlayerUiOnNextEnabled, mIsPlayerAutoVolumeEnabled, mIsPlayerGlobalFocusEnabled,
+                mScreenOffDimmingPercents, mIsBootScreenOffEnabled, mIsPlayerUiOnNextEnabled, mIsPlayerAutoVolumeEnabled, mIsSimplePlayerNavigationEnabled,
                 mIsUnsafeAudioFormatsEnabled, null, mIsLoopShortsEnabled, mIsQuickSkipShortsEnabled, mIsRememberPositionOfLiveVideosEnabled,
-                mIsOculusQuestFixEnabled, null, mIsExtraLongSpeedListEnabled, mIsQuickSkipVideosEnabled, mIsNetworkErrorFixingDisabled, mIsCommentsPlacedLeft,
-                mIsPlaybackErrorsFixEnabled
+                mIsOculusQuestFixEnabled, null, mIsExtraLongSpeedListEnabled, mIsQuickSkipVideosEnabled, null, mIsCommentsPlacedLeft,
+                mIsPersistentAntiBotFixEnabled, mIsAudioFocusEnabled
                 ));
     }
 

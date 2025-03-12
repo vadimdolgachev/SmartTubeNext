@@ -41,6 +41,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
     private AppDialogPresenter mPresenter;
     private AppPreferenceManager mManager;
     private boolean mIsTransparent;
+    private boolean mIsOverlay;
     private boolean mIsPaused;
     private int mId;
 
@@ -121,7 +122,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
     }
 
     @Override
-    public void show(List<OptionCategory> categories, String title, boolean isExpandable, boolean isTransparent, int id) {
+    public void show(List<OptionCategory> categories, String title, boolean isExpandable, boolean isTransparent, boolean isOverlay, int id) {
         if (!Utils.checkActivity(getActivity())) {
             return;
         }
@@ -129,22 +130,22 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         // Only root fragment could make other fragments in the stack transparent
         boolean stackIsEmpty = getChildFragmentManager() != null && getChildFragmentManager().getBackStackEntryCount() == 0;
         mIsTransparent = stackIsEmpty ? isTransparent : mIsTransparent;
+        mIsOverlay = isOverlay;
         mId = id;
-
-        AppPreferenceFragment fragment = buildPreferenceFragment(categories, title);
 
         if (isExpandable && categories != null && categories.size() == 1) {
             OptionCategory category = categories.get(0);
             if (category.options != null) {
-                onPreferenceDisplayDialog(fragment, mManager.createPreference(category));
+                onPreferenceDisplayDialog(null, mManager.createPreference(category));
             }
         } else {
+            AppPreferenceFragment fragment = buildPreferenceFragment(categories, title);
             startPreferenceFragment(fragment);
         }
     }
 
     @Override
-    public boolean onPreferenceDisplayDialog(@NonNull PreferenceFragment caller, @NonNull Preference pref) {
+    public boolean onPreferenceDisplayDialog(@Nullable PreferenceFragment caller, @NonNull Preference pref) {
         // Fix: IllegalStateException: Activity has been destroyed
         // Possible fix: Unable to add window -- token android.os.BinderProxy is not valid; is your activity running?
         if (!Utils.checkActivity(getActivity())) {
@@ -266,6 +267,11 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
     @Override
     public boolean isTransparent() {
         return mIsTransparent;
+    }
+
+    @Override
+    public boolean isOverlay() {
+        return mIsOverlay;
     }
 
     @Override

@@ -11,7 +11,7 @@ import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.liskovsoft.googleapi.drive3.impl.GDriveService;
+import com.liskovsoft.googleapi.service.DriveService;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
@@ -37,6 +37,7 @@ public class GDriveBackupWorker extends Worker {
     private static final String TAG = GDriveBackupWorker.class.getSimpleName();
     private static final String WORK_NAME = TAG;
     private static final String BLOCKED_FILE_NAME = "blocked";
+    private static final long REPEAT_INTERVAL_DAYS = 1;
     private static Disposable sAction;
     private final GDriveBackupManager mTask;
 
@@ -54,7 +55,7 @@ public class GDriveBackupWorker extends Worker {
             workManager.enqueueUniquePeriodicWork(
                     WORK_NAME,
                     ExistingPeriodicWorkPolicy.UPDATE, // fix duplicates (when old worker is running)
-                    new PeriodicWorkRequest.Builder(GDriveBackupWorker.class, 1, TimeUnit.DAYS).addTag(WORK_NAME).build()
+                    new PeriodicWorkRequest.Builder(GDriveBackupWorker.class, REPEAT_INTERVAL_DAYS, TimeUnit.DAYS).addTag(WORK_NAME).build()
             );
         }
     }
@@ -69,7 +70,7 @@ public class GDriveBackupWorker extends Worker {
         String backupDir = GDriveBackupManager.instance(context).getBackupDir();
 
         // then persist id to gdrive
-        sAction = GDriveService.instance().uploadFile(id, Uri.parse(String.format("%s/%s", backupDir, BLOCKED_FILE_NAME)))
+        sAction = DriveService.uploadFile(id, Uri.parse(String.format("%s/%s", backupDir, BLOCKED_FILE_NAME)))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(unused -> {
@@ -116,7 +117,7 @@ public class GDriveBackupWorker extends Worker {
         String backupDir = GDriveBackupManager.instance(getApplicationContext()).getBackupDir();
 
         // get id form gdrive
-        GDriveService.instance().getFile(Uri.parse(String.format("%s/%s", backupDir, BLOCKED_FILE_NAME)))
+        DriveService.getFile(Uri.parse(String.format("%s/%s", backupDir, BLOCKED_FILE_NAME)))
                 .blockingSubscribe(inputStream -> {
                     // if id match run work as usual
                     String actualId = Helpers.toString(inputStream);

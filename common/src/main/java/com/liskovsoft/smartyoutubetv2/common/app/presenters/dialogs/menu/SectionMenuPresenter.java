@@ -1,8 +1,11 @@
 package com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu;
 
 import android.content.Context;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
+
+import androidx.annotation.Nullable;
+
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
@@ -49,7 +52,7 @@ public class SectionMenuPresenter extends BaseMenuPresenter {
     }
 
     @Override
-    protected Video getVideo() {
+    protected @Nullable Video getVideo() {
         return mVideo;
     }
 
@@ -137,9 +140,7 @@ public class SectionMenuPresenter extends BaseMenuPresenter {
             }
         }
 
-        if (mDialogPresenter.isEmpty()) {
-            MessageHelpers.showMessage(getContext(), R.string.msg_signed_users_only);
-        } else {
+        if (!mDialogPresenter.isEmpty()) {
             String title = mSection != null ? mSection.getTitle() : null;
             mDialogPresenter.showDialog(title, this::disposeActions);
         }
@@ -191,7 +192,8 @@ public class SectionMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
-        if (mSection == null || mSection.isDefault() || (!getVideo().hasPlaylist() && !getVideo().hasReloadPageKey() && !getVideo().hasChannel())) {
+        if (mSection == null || mSection.isDefault() || getVideo() == null ||
+                (!getVideo().hasPlaylist() && !getVideo().hasReloadPageKey() && !getVideo().hasChannel())) {
             return;
         }
 

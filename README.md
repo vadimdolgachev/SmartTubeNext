@@ -1,4 +1,4 @@
-# SmartTube (old name SmartTubeNext)
+# SmartTube (previously SmartTubeNext)
   
 <img width="100" src="https://github.com/yuliskov/SmartTube/blob/master/smarttubetv/src/ststable/res/mipmap-nodpi/app_icon.png" alt="logo"/>
 
@@ -158,15 +158,19 @@ To enable global voice search, an additional app must be installed alongside Sma
 
 If you want to support my developments you are welcome to buy me a cup of coffee :)
 
-> [**Patreon (Visa, Mastercard, PayPal)**](https://www.patreon.com/smarttube)  
-> **PayPal**: firsth<!-- abc@def -->ash@gmai<!-- @abc.com -->l.com  
+- [**Patreon (Visa, Mastercard, PayPal)**](https://www.patreon.com/smarttube)  
+- **PayPal**: firsth<!-- abc@def -->ash@gmai<!-- @abc.com -->l.com  
 <!-- > [**Buy me a coffee**](https://www.buymeacoffee.com/stube) -->  
-> **BTC**: 1JAT5VVWarVBkpVbNDn8UA8HXNdrukuBSx  
-> **LTC**: ltc1qgc24eq9jl9cq78qnd5jpqhemkajg9vudwyd8pw  
-> **ETH**: 0xe455E21a085ae195a097cd4F456051A9916A5064  
-> **ETC**: 0x209eCd33Fa61fA92167595eB3Aea92EE1905c815  
-> **XMR**: 48QsMjqfkeW54vkgKyRnjodtYxdmLk6HXfTWPSZoaFPEDpoHDwFUciGCe1QC9VAeGrgGw4PKNAksX9RW7myFqYJQDN5cHGT    
-> **USDT (ERC20)**: 0xe455e21a085ae195a097cd4f456051a9916a5064  
+- **BTC**: 1JAT5VVWarVBkpVbNDn8UA8HXNdrukuBSx  
+- **LTC**: ltc1qgc24eq9jl9cq78qnd5jpqhemkajg9vudwyd8pw  
+- **ETH**: 0xe455E21a085ae195a097cd4F456051A9916A5064  
+- **ETC**: 0x209eCd33Fa61fA92167595eB3Aea92EE1905c815  
+- **TRX**: TJNPY794aSGZf3WGHTna2VCWm2G5Yua7E8  
+- **USDT (TRC20)**: TJNPY794aSGZf3WGHTna2VCWm2G5Yua7E8  
+- **USDT (BEP20)**: 0x64B28da787BE6ac5889D276A5638d4f077840eC5  
+- **USDT (ERC20)**: 0xe455e21a085ae195a097cd4f456051a9916a5064   
+- **TON**: UQAc9zgnnzwS8yb5wxAu5CB0RddmjPBjWI-n46oQ7XfCQrgI  
+- **XMR**: 48QsMjqfkeW54vkgKyRnjodtYxdmLk6HXfTWPSZoaFPEDpoHDwFUciGCe1QC9VAeGrgGw4PKNAksX9RW7myFqYJQDN5cHGT    
 
 
 ## Support
@@ -175,9 +179,10 @@ If you want to support my developments you are welcome to buy me a cup of coffee
 
 You can report in our Telegram group or via [issue tracker on Github](https://github.com/yuliskov/SmartTube/issues) (account required).
 
-> **Telegram group (international)**: [@SmartTubeEN](http://t.me/SmartTubeEN)  
-> **Telegram group (RU/UA)**: [@SmartTubeUA](http://t.me/SmartTubeUA)  
-> **Email**: firsth<!-- abc@def -->ash@gmai<!-- @abc.com -->l.com
+- **Telegram group (international)**: [@SmartTubeEN](http://t.me/SmartTubeEN)  
+- **Discord group (international)**: [SmartTube Official](https://discord.gg/Wt8HDDej5z)  
+- **Telegram group (RU/UA)**: [@SmartTubeUA](http://t.me/SmartTubeUA)  
+- **Email**: firsth<!-- abc@def -->ash@gmai<!-- @abc.com -->l.com
 
 The international group is in **English only**. But don't worry if your English is not perfect, we have a friendly international community.
 

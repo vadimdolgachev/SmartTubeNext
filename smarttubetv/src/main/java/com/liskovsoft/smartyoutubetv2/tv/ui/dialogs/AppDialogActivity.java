@@ -1,9 +1,13 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.dialogs;
 
+import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.view.KeyEvent;
+
+import androidx.fragment.app.Fragment;
+
 import com.liskovsoft.sharedutils.helpers.KeyHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
@@ -57,35 +61,39 @@ public class AppDialogActivity extends MotherActivity {
         //}
 
         //return mGlobalKeyTranslator.translate(event) || super.dispatchKeyEvent(event);
-        KeyEvent newEvent = mGlobalKeyTranslator.translateAlt(event);
-        return super.dispatchKeyEvent(newEvent);
+        KeyEvent newEvent = mGlobalKeyTranslator.translate(event);
+        return handleNavigation(newEvent) || super.dispatchKeyEvent(newEvent);
     }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (!mFragment.isTransparent() && KeyHelpers.isMenuKey(keyCode)) { // toggle dialog with menu key
-            finish();
+    
+    private boolean handleNavigation(KeyEvent event) {
+        if (event == null) {
+            return false;
         }
 
-        // Notification dialog type. Imitate notification behavior.
-        if (mFragment.isTransparent() && (KeyHelpers.isNavigationKey(keyCode) || KeyHelpers.isMenuKey(keyCode))) {
-            finish();
-            PlaybackView view = PlaybackPresenter.instance(this).getView();
-            if (view != null) {
-                view.showControls(true);
+        // Toggle dialog
+        if (!mFragment.isOverlay() && (KeyHelpers.isLeftRightKey(event.getKeyCode()) || KeyHelpers.isMenuKey(event.getKeyCode()))) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                finish();
             }
+            return true;
         }
 
         // Notification dialog type. Imitate notification behavior.
-        //if (mFragment.isTransparent() && KeyHelpers.isBackKey(keyCode)) {
-        //    finish();
-        //    PlaybackView view = PlaybackPresenter.instance(this).getView();
-        //    if (view != null) {
-        //        view.finish();
-        //    }
-        //}
+        if (mFragment.isOverlay() && (KeyHelpers.isNavigationKey(event.getKeyCode()) || KeyHelpers.isMenuKey(event.getKeyCode()))) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                finish();
+            }
+            PlaybackView view = PlaybackPresenter.instance(this).getView();
+            if (view instanceof Fragment) {
+                Activity activity = ((Fragment) view).getActivity();
+                if (activity != null) {
+                    activity.dispatchKeyEvent(event);
+                }
+            }
+            return true;
+        }
 
-        return super.onKeyDown(keyCode, event);
+        return false;
     }
 
     @Override

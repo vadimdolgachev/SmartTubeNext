@@ -3,14 +3,12 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters;
 import android.annotation.SuppressLint;
 import android.content.Context;
 
-import androidx.annotation.NonNull;
-
-import com.liskovsoft.mediaserviceinterfaces.yt.ContentService;
-import com.liskovsoft.mediaserviceinterfaces.yt.NotificationsService;
-import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.ContentService;
+import com.liskovsoft.mediaserviceinterfaces.NotificationsService;
+import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.ScreenHelper;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
@@ -34,9 +32,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.Channel
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.SectionMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.VideoMenuCallback;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroup;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroup.Channel;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroupService;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroupServiceWrapper;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.SectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.VideoGroupPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
@@ -139,7 +135,6 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         updateChannelSorting();
         updatePlaylistsStyle();
         updateSections();
-        Utils.updateRemoteControlService(getContext());
 
         // Move default focus
         int selectedSectionIndex = findSectionIndex(mCurrentSection != null ? mCurrentSection.getId() : mBootstrapSectionId);
@@ -167,6 +162,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     private void restoreSelectedItems() {
+        if (getView() == null) {
+            return;
+        }
+
         if ((isSubscriptionsSection() && mGeneralData.isRememberSubscriptionsPositionEnabled()) ||
                 (isPinnedSection() && mGeneralData.isRememberPinnedPositionEnabled())) {
             getView().selectSectionItem(mGeneralData.getSelectedItem(mCurrentSection.getId()));
@@ -190,16 +189,18 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mSectionsMapping.put(MediaGroup.TYPE_TRENDING, new BrowseSection(MediaGroup.TYPE_TRENDING, getContext().getString(R.string.header_trending), BrowseSection.TYPE_ROW, R.drawable.icon_trending));
         mSectionsMapping.put(MediaGroup.TYPE_KIDS_HOME, new BrowseSection(MediaGroup.TYPE_KIDS_HOME, getContext().getString(R.string.header_kids_home), BrowseSection.TYPE_ROW, R.drawable.icon_kids_home));
         mSectionsMapping.put(MediaGroup.TYPE_SPORTS, new BrowseSection(MediaGroup.TYPE_SPORTS, getContext().getString(R.string.header_sports), BrowseSection.TYPE_ROW, R.drawable.icon_sports));
+        mSectionsMapping.put(MediaGroup.TYPE_LIVE, new BrowseSection(MediaGroup.TYPE_LIVE, getContext().getString(R.string.badge_live), BrowseSection.TYPE_ROW, R.drawable.icon_live));
+        mSectionsMapping.put(MediaGroup.TYPE_MY_VIDEOS, new BrowseSection(MediaGroup.TYPE_MY_VIDEOS, getContext().getString(R.string.my_videos), BrowseSection.TYPE_GRID, R.drawable.icon_playlist));
         mSectionsMapping.put(MediaGroup.TYPE_GAMING, new BrowseSection(MediaGroup.TYPE_GAMING, getContext().getString(R.string.header_gaming), BrowseSection.TYPE_ROW, R.drawable.icon_gaming));
         if (!Helpers.equalsAny(country, "RU", "BY")) {
             mSectionsMapping.put(MediaGroup.TYPE_NEWS, new BrowseSection(MediaGroup.TYPE_NEWS, getContext().getString(R.string.header_news), BrowseSection.TYPE_ROW, R.drawable.icon_news));
         }
         mSectionsMapping.put(MediaGroup.TYPE_MUSIC, new BrowseSection(MediaGroup.TYPE_MUSIC, getContext().getString(R.string.header_music), BrowseSection.TYPE_ROW, R.drawable.icon_music));
-        mSectionsMapping.put(MediaGroup.TYPE_CHANNEL_UPLOADS, new BrowseSection(MediaGroup.TYPE_CHANNEL_UPLOADS, getContext().getString(R.string.header_channels), uploadsType, R.drawable.icon_channels, true));
-        mSectionsMapping.put(MediaGroup.TYPE_SUBSCRIPTIONS, new BrowseSection(MediaGroup.TYPE_SUBSCRIPTIONS, getContext().getString(R.string.header_subscriptions), BrowseSection.TYPE_GRID, R.drawable.icon_subscriptions, true));
+        mSectionsMapping.put(MediaGroup.TYPE_CHANNEL_UPLOADS, new BrowseSection(MediaGroup.TYPE_CHANNEL_UPLOADS, getContext().getString(R.string.header_channels), uploadsType, R.drawable.icon_channels, false));
+        mSectionsMapping.put(MediaGroup.TYPE_SUBSCRIPTIONS, new BrowseSection(MediaGroup.TYPE_SUBSCRIPTIONS, getContext().getString(R.string.header_subscriptions), BrowseSection.TYPE_GRID, R.drawable.icon_subscriptions, false));
         mSectionsMapping.put(MediaGroup.TYPE_HISTORY, new BrowseSection(MediaGroup.TYPE_HISTORY, getContext().getString(R.string.header_history), BrowseSection.TYPE_GRID, R.drawable.icon_history, true));
-        mSectionsMapping.put(MediaGroup.TYPE_USER_PLAYLISTS, new BrowseSection(MediaGroup.TYPE_USER_PLAYLISTS, getContext().getString(R.string.header_playlists), BrowseSection.TYPE_ROW, R.drawable.icon_playlist, true));
-        mSectionsMapping.put(MediaGroup.TYPE_NOTIFICATIONS, new BrowseSection(MediaGroup.TYPE_NOTIFICATIONS, getContext().getString(R.string.header_notifications), BrowseSection.TYPE_GRID, R.drawable.icon_notification, true));
+        mSectionsMapping.put(MediaGroup.TYPE_USER_PLAYLISTS, new BrowseSection(MediaGroup.TYPE_USER_PLAYLISTS, getContext().getString(R.string.header_playlists), BrowseSection.TYPE_ROW, R.drawable.icon_playlist, false));
+        mSectionsMapping.put(MediaGroup.TYPE_NOTIFICATIONS, new BrowseSection(MediaGroup.TYPE_NOTIFICATIONS, getContext().getString(R.string.header_notifications), BrowseSection.TYPE_GRID, R.drawable.icon_notification, false));
 
         if (mSidebarService.isSettingsSectionEnabled()) {
             mSectionsMapping.put(MediaGroup.TYPE_SETTINGS, new BrowseSection(MediaGroup.TYPE_SETTINGS, getContext().getString(R.string.header_settings), BrowseSection.TYPE_SETTINGS_GRID, R.drawable.icon_settings));
@@ -211,6 +212,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mRowMapping.put(MediaGroup.TYPE_TRENDING, mContentService.getTrendingObserve());
         mRowMapping.put(MediaGroup.TYPE_KIDS_HOME, mContentService.getKidsHomeObserve());
         mRowMapping.put(MediaGroup.TYPE_SPORTS, mContentService.getSportsObserve());
+        mRowMapping.put(MediaGroup.TYPE_LIVE, mContentService.getLiveObserve());
         mRowMapping.put(MediaGroup.TYPE_NEWS, mContentService.getNewsObserve());
         mRowMapping.put(MediaGroup.TYPE_MUSIC, mContentService.getMusicObserve());
         mRowMapping.put(MediaGroup.TYPE_GAMING, mContentService.getGamingObserve());
@@ -221,6 +223,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mGridMapping.put(MediaGroup.TYPE_HISTORY, mContentService.getHistoryObserve());
         mGridMapping.put(MediaGroup.TYPE_CHANNEL_UPLOADS, mContentService.getSubscribedChannelsByNewContentObserve());
         mGridMapping.put(MediaGroup.TYPE_NOTIFICATIONS, mNotificationsService.getNotificationItemsObserve());
+        mGridMapping.put(MediaGroup.TYPE_MY_VIDEOS, mContentService.getMyVideosObserve());
     }
 
     private void initPinnedSections() {
@@ -263,6 +266,14 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
+        int bootSectionId = mSidebarService.getBootSectionId();
+
+        // Empty Home on first run fix. Switch Trending temporarily.
+        if (!mSignInService.isSigned() && VideoStateService.instance(getContext()).isEmpty()) {
+            bootSectionId = MediaGroup.TYPE_TRENDING;
+            //mSidebarService.enableSection(bootSectionId, true);
+        }
+
         // clean up (profile changed etc)
         getView().removeAllSections();
 
@@ -280,10 +291,9 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             if (section.getId() == MediaGroup.TYPE_SETTINGS) {
                 section.setEnabled(true);
             }
-            //section.setEnabled(section.getId() == MediaGroup.TYPE_SETTINGS || mGeneralData.isSectionPinned(section.getId()));
 
             if (section.isEnabled()) {
-                if (section.getId() == mSidebarService.getBootSectionId()) {
+                if (section.getId() == bootSectionId) {
                     mBootSectionIndex = index;
                 }
                 getView().addSection(index++, section);
@@ -450,6 +460,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mCurrentSection = findSectionById(sectionId);
         mCurrentVideo = null; // fast scroll through the sections (fix empty selected item)
         updateCurrentSection();
+        restoreSelectedItems(); // Don't place anywhere else
     }
 
     @Override
@@ -659,6 +670,14 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         firstGroup.setAction(VideoGroup.ACTION_REPLACE);
         getView().updateSection(firstGroup);
 
+        if (groups == null) {
+            // No group. Maybe just clear.
+            getView().showProgressBar(false);
+            return;
+        }
+
+        //restoreSelectedItems(); // Don't place anywhere else
+
         Disposable updateAction = groups
                 .subscribe(
                         mediaGroups -> {
@@ -683,8 +702,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                         error -> {
                             Log.e(TAG, "updateRowsHeader error: %s", error.getMessage());
                             handleLoadError(error);
-                        },
-                        () -> getView().showProgressBar(false));
+                        }, () -> handleLoadError(null));
 
         mActions.add(updateAction);
     }
@@ -712,7 +730,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        restoreSelectedItems();
+        //restoreSelectedItems(); // Don't place anywhere else
 
         Disposable updateAction = group
                 .subscribe(
@@ -735,8 +753,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                         error -> {
                             Log.e(TAG, "updateGridHeader error: %s", error.getMessage());
                             handleLoadError(error);
-                        },
-                        () -> getView().showProgressBar(false));
+                        }, () -> handleLoadError(null));
 
         mActions.add(updateAction);
     }
@@ -805,33 +822,20 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         getView().showProgressBar(true);
 
-        Disposable signCheckAction = mSignInService.isSignedObserve()
-                .subscribe(
-                        isSigned -> {
-                            if (isSigned) {
-                                callback.run();
-                            } else if (getView() != null) {
-                                if (isHistorySection() && !VideoStateService.instance(getContext()).isEmpty()) {
-                                    getView().showProgressBar(false);
-                                    VideoGroup videoGroup = VideoGroup.from(null, getCurrentSection(), -1);
-                                    videoGroup.setType(MediaGroup.TYPE_HISTORY);
-                                    appendLocalHistory(videoGroup);
-                                    getView().updateSection(videoGroup);
-                                } else if (isSubscriptionsSection() && !ChannelGroupService.instance(getContext()).isEmpty()) {
-                                    appendLocalSubscriptions();
-                                } else if (isMultiGridChannelUploadsSection() && !ChannelGroupService.instance(getContext()).isEmpty()) {
-                                    getView().showProgressBar(false);
-                                    appendLocalChannels();
-                                } else if (getView().isProgressBarShowing()) {
-                                    getView().showProgressBar(false);
-                                    getView().showError(new SignInError(getContext()));
-                                }
-                            }
-                        },
-                        error -> Log.e(TAG, "authCheck error: %s", error.getMessage())
-                );
-
-        mActions.add(signCheckAction);
+        if (mSignInService.isSigned()) {
+            callback.run();
+        } else if (getView() != null) {
+            if (isHistorySection() && !VideoStateService.instance(getContext()).isEmpty()) {
+                getView().showProgressBar(false);
+                VideoGroup videoGroup = VideoGroup.from(null, getCurrentSection(), -1);
+                videoGroup.setType(MediaGroup.TYPE_HISTORY);
+                appendLocalHistory(videoGroup);
+                getView().updateSection(videoGroup);
+            } else {
+                getView().showProgressBar(false);
+                getView().showError(new SignInError(getContext()));
+            }
+        }
     }
 
     /**
@@ -978,8 +982,8 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     private Observable<MediaGroup> createPinnedGridAction(Video item) {
-        if (item.channelGroupId != -1) {
-            return mContentService.getSubscriptionsObserve(ChannelGroupService.instance(getContext()).getChannelGroupIds(item.channelGroupId));
+        if (item.channelGroupId != null) {
+            return mContentService.getSubscriptionsObserve(ChannelGroupServiceWrapper.instance(getContext()).findChannelIdsForGroup(item.channelGroupId));
         }
 
         return ChannelUploadsPresenter.instance(getContext()).obtainUploadsObservable(item);
@@ -1100,20 +1104,28 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     private void handleLoadError(Throwable error) {
-        if (getView() != null) {
-            getView().showProgressBar(false);
+        if (getView() == null) {
+            return;
         }
-        if (getView() != null && getView().isEmpty()) {
-            getView().showError(new CategoryEmptyError(getContext(), error));
+
+        getView().showProgressBar(false);
+
+        if (getView().isEmpty()) {
+            ErrorFragmentData errorFragmentData;
+            if (error != null && !Helpers.containsAny(error.getMessage(), "fromNullable result is null")) {
+                errorFragmentData = new CategoryEmptyError(getContext(), error);
+            } else if (mSignInService.isSigned()) {
+                errorFragmentData = new CategoryEmptyError(getContext(), null);
+            } else {
+                errorFragmentData = new SignInError(getContext());
+            }
+
+            getView().showError(errorFragmentData);
             Utils.postDelayed(mRefreshSection, 30_000);
         }
-        //if (isHomeSection()) { // maybe the history turned off?
-        //    MediaServiceManager.instance().enableHistory(true);
-        //    mGeneralData.enableHistory(true);
-        //}
     }
 
-    private void appendLocalHistory(@NonNull VideoGroup videoGroup) {
+    private void appendLocalHistory(VideoGroup videoGroup) {
         VideoStateService stateService = VideoStateService.instance(getContext());
 
         if (!isHistorySection() || (!stateService.isHistoryBroken() && !videoGroup.isEmpty())) {
@@ -1133,25 +1145,6 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         for (State state : stateService.getStates()) {
             videoGroup.add(0, state.video);
-        }
-    }
-
-    private void appendLocalSubscriptions() {
-        updateVideoGrid(getCurrentSection(),
-                mContentService.getSubscriptionsObserve(
-                        ChannelGroupService.instance(getContext()).getChannelGroupIds(ChannelGroupService.SUBSCRIPTION_GROUP_ID)), -1);
-    }
-
-    private void appendLocalChannels() {
-        ChannelGroup subscriptions = ChannelGroupService.instance(getContext()).findChannelGroup(ChannelGroupService.SUBSCRIPTION_GROUP_ID);
-        if (subscriptions != null) {
-            List<Video> channels = new ArrayList<>();
-            for (Channel channel : subscriptions.channels) {
-                channels.add(Video.from(channel));
-            }
-            VideoGroup group = VideoGroup.from(channels, 0);
-            group.setType(MediaGroup.TYPE_CHANNEL_UPLOADS);
-            getView().updateSection(group);
         }
     }
 }

@@ -226,6 +226,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         showHideWidgets(true); // PIP mode fix
         blockEngine(false); // reset bg mode
+        //ExoPlayerInitializer.enableAudioFocus(mPlayer, true); // Restore focus after PIP
     }
 
     @Override
@@ -240,6 +241,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         }
 
         showHideWidgets(false); // PIP mode fix
+        //ExoPlayerInitializer.enableAudioFocus(mPlayer, false); // Disable focus in PIP
     }
 
     public void onDispatchKeyEvent(KeyEvent event) {
@@ -305,6 +307,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             // Fix partially disappeared buttons after exit from PIP???
             notifyPlaybackRowChanged();
         }
+    }
+
+    @Override
+    protected void onSeekPositionChanged(long positionMs) {
+        mPlaybackPresenter.onSeekPositionChanged(positionMs);
     }
 
     public void skipToNext() {
@@ -488,6 +495,10 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         }
 
         mExoPlayerController.setPlayer(mPlayer);
+
+        if (PlayerTweaksData.instance(getContext()).isAudioFocusEnabled()) {
+            ExoPlayerInitializer.enableAudioFocus(mPlayer, true);
+        }
     }
 
     private void createPlayerGlue() {
@@ -561,10 +572,10 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
             MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
 
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getVideo().getTitle());
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, getVideo().getTitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getVideo().getPlayerTitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, getVideo().getPlayerTitle());
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, getVideo().getAuthor());
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, getVideo().getSecondTitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, getVideo().getPlayerSubtitle());
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, getVideo().getCardImageUrl());
             metadataBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDurationMs());
 
@@ -849,8 +860,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         if (mPlayerGlue != null && video != null) {
             // Preserve player formatting
-            mPlayerGlue.setTitle(video.getTitle() != null ? video.getTitle() : "...");
-            mPlayerGlue.setSubtitle(video.getSecondTitle() != null ? createSecondTitle(video) : "...");
+            mPlayerGlue.setTitle(video.getPlayerTitle() != null ? video.getPlayerTitle() : "...");
+            mPlayerGlue.setSubtitle(video.getPlayerSubtitle() != null ? createSubtitle(video) : "...");
             mPlayerGlue.setVideo(video);
         }
     }
@@ -865,8 +876,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         mBackgroundManager.showBackgroundColor(colorResId);
     }
 
-    private CharSequence createSecondTitle(Video video) {
-        CharSequence result = video.getSecondTitle();
+    private CharSequence createSubtitle(Video video) {
+        CharSequence result = video.getPlayerSubtitle();
 
         if (getContext() != null && video.isLive) {
             result = TextUtils.concat( result, " ", Video.TERTIARY_TEXT_DELIM, " ", Utils.color(getContext().getString(R.string.badge_live), ContextCompat.getColor(getContext(), R.color.red)));
@@ -1360,8 +1371,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     @Override
     public void setSeekPreviewTitle(String title) {
         if (mPlayerGlue != null) {
-            mPlayerGlue.setSeekPreviewTitle(title);
-            mPlayerGlue.setBody(title);
+            mPlayerGlue.setSeekPreviewTitle(title); // seeking ui
+            // NOTE: setBody re-renders ui on change
+            //mPlayerGlue.setBody(title); // full ui
         }
     }
 

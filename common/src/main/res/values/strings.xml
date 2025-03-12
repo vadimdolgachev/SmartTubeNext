@@ -297,6 +297,7 @@
     <string name="upload_date_last_hour">Last hour</string>
     <string name="focus_on_search_results">Autofocus on search results</string>
     <string name="context_menu">Context menu</string>
+    <string name="context_menu_sorting">Context menu sorting</string>
     <string name="add_remove_from_recent_playlist">Add/Remove from recent playlist</string>
     <string name="hide_settings_section">Hide Settings section (dangerous!)</string>
     <string name="volume">Volume %s%%</string>
@@ -591,7 +592,7 @@
     <string name="old_update_notifications">Old look of the update notifications</string>
     <string name="dialog_notification">Notify about updates with a pop-up dialog</string>
     <string name="mark_as_watched">Mark as watched</string>
-    <string name="player_ui_animations">Enable control panel animations</string>
+    <string name="player_ui_animations">Enable player UI animations</string>
     <string name="player_likes_count">Show likes/dislikes count</string>
     <string name="sorting_alphabetically2">Alphabetically (fast, animated previews)</string>
     <string name="sorting_default">Default (fast, animated previews)</string>
@@ -687,5 +688,11 @@
     <string name="screen_dimming_amount">Screen dimming amount</string>
     <string name="screen_dimming_timeout">Screen dimming timeout</string>
     <string name="playlists_rows">Show Playlists section as rows</string>
+    <string name="import_subscriptions_group">Import</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Disable Closed Captioning</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Enable Closed Captioning</string>
+    <string name="my_videos">My videos</string>
+    <string name="player_audio_focus">Audio focus (pause if other players detected)</string>
+    <string name="paid_content_notification">Paid content notification</string>
     <string name="cancel">Cancel</string>
 </resources>

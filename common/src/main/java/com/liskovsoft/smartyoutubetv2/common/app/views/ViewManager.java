@@ -98,7 +98,7 @@ public class ViewManager {
      */
     public void startView(Class<?> viewClass, boolean forceStart) {
         // Skip starting activity twice to get rid of pausing/resuming activity cycle
-        if (Utils.isAppInForeground() && getTopView() != null && getTopView() == viewClass) {
+        if (Utils.isAppInForegroundFixed() && getTopView() != null && getTopView() == viewClass) {
             return;
         }
 
@@ -379,10 +379,8 @@ public class ViewManager {
     private void safeStartActivity(Context context, Intent intent) {
         mIsFinished = false;
 
-        //if (PlaybackPresenter.instance(mContext).isInPipMode()) {
-        //if (PlaybackPresenter.instance(mContext).getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_PIP) {
-        if (PlaybackPresenter.instance(mContext).isEngineBlocked()) {
-            Utils.postDelayed(() -> safeStartActivityInt(context, intent), 50);
+        if (PlaybackPresenter.instance(mContext).isEngineBlocked()) { // Android 14 no-pip fix???
+            Utils.postDelayed(() -> safeStartActivityInt(context, intent), 0); // 50 ms old val
         } else {
             safeStartActivityInt(context, intent);
         }
@@ -454,11 +452,11 @@ public class ViewManager {
     }
 
     public boolean isPlayerInForeground() {
-        return Utils.isAppInForeground() && getTopView() == PlaybackView.class;
+        return Utils.isAppInForegroundFixed() && getTopView() == PlaybackView.class;
     }
 
     public void moveAppToForeground() {
-        if (!Utils.isAppInForeground()) {
+        if (!Utils.isAppInForegroundFixed()) {
             startView(SplashView.class);
         }
     }

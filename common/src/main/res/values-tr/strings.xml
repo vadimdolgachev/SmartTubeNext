@@ -297,6 +297,7 @@
     <string name="upload_date_last_hour">Son bir saat</string>
     <string name="focus_on_search_results">Arama sonuçlarına otomatik odaklan</string>
     <string name="context_menu">İçerik menüsü</string>
+    <string name="context_menu_sorting">İçerik menüsü sıralama</string>
     <string name="add_remove_from_recent_playlist">Son oynatma listesine Ekle/Kaldır</string>
     <string name="hide_settings_section">Ayarlar bölümünü gizle (tehlikeli!)</string>
     <string name="volume">Ses %s%%</string>
@@ -689,4 +690,10 @@
     <string name="screen_dimming_amount">Ekran karartma miktarı</string>
     <string name="screen_dimming_timeout">Ekran karartma zaman aşımı</string>
     <string name="playlists_rows">Oynatma listelerini satır olarak göster</string>
+    <string name="import_subscriptions_group">Içe aktar</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Altyazıyı Devre Dışı Bırak</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Altyazıyı Aktifleştir</string>
+    <string name="my_videos">Videolarım</string>
+    <string name="player_audio_focus">Ses odaklama (diğer video oynatıcılar algılanırsa duraklatma)</string>
+    <string name="paid_content_notification">Ücretli içerik bildirimleri</string>
 </resources>

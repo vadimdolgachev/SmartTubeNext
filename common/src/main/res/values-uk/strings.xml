@@ -297,6 +297,7 @@
     <string name="upload_date_last_hour">Остання година</string>
     <string name="focus_on_search_results">Автофокусування на результатах пошуку</string>
     <string name="context_menu">Контекстне меню</string>
+    <string name="context_menu_sorting">Сортування контекстного меню</string>
     <string name="add_remove_from_recent_playlist">Додати/Видалити з недавнього плейлиста</string>
     <string name="hide_settings_section">Приховувати розділ Налаштування (небезпечно!)</string>
     <string name="volume">Гучність %s%%</string>
@@ -586,7 +587,7 @@
     <string name="old_update_notifications">Старий вигляд сповіщень про оновлення</string>
     <string name="dialog_notification">Повідомляти про оновлення вспливаючим діалогом</string>
     <string name="mark_as_watched">Відмітити як переглянуте</string>
-    <string name="player_ui_animations">Увімкнути анімацію панелі керування</string>
+    <string name="player_ui_animations">Увімкнути анімацію інтерфейсу плеєра</string>
     <string name="player_likes_count">Відображати кількість лайків/діслайків</string>
     <string name="sorting_alphabetically2">За абеткою (швидко, анімовані прев\'ю)</string>
     <string name="sorting_default">За замовчуванням (швидко, анімовані прев\'ю)</string>
@@ -680,4 +681,8 @@
     <string name="screen_dimming_amount">Величина затемнення екрана</string>
     <string name="screen_dimming_timeout">Тайм-аут затемнення екрана</string>
     <string name="playlists_rows">Відображати розділ Плейлисти у вигляді рядків</string>
+    <string name="import_subscriptions_group">Імпорт</string>
+    <string name="my_videos">Мої відео</string>
+    <string name="player_audio_focus">Аудіо фокус (пауза, якщо виявлено інші плеєри)</string>
+    <string name="paid_content_notification">Повідомлення про платний вміст</string>
 </resources>

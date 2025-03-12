@@ -4,7 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.GlobalConstants;
 import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
@@ -35,8 +35,6 @@ import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.disposables.Disposable;
-
 public class SplashPresenter extends BasePresenter<SplashView> {
     private static final String TAG = SplashPresenter.class.getSimpleName();
     private static final long APP_INIT_DELAY_MS = 10_000;
@@ -45,9 +43,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     private static boolean sRunOnce;
     private boolean mRunPerInstance;
     private final List<IntentProcessor> mIntentChain = new ArrayList<>();
-    private Disposable mRefreshCachePeriodicAction;
     private String mBridgePackageName;
     private final Runnable mRunBackgroundTasks = this::runBackgroundTasks;
+    private final Runnable mCheckForUpdates = this::checkForUpdates;
 
     private interface IntentProcessor {
         boolean process(Intent intent);
@@ -80,27 +78,34 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             return;
         }
 
-        if (ViewManager.instance(getContext()).isFinished()) {
-            Utils.restartTheApp(getContext(), getView().getNewIntent());
-            return;
-        }
-
-        applyRunPerInstanceTasks();
         applyRunOnceTasks();
+        applyRunPerInstanceTasks();
+        Utils.postDelayed(mCheckForUpdates, APP_INIT_DELAY_MS);
+        Utils.updateRemoteControlService(getContext());
 
         //runRefreshCachePeriodicTask();
-        showAccountSelectionIfNeeded();
 
         checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
 
+        showAccountSelectionIfNeeded(); // should be placed after Intent chain
         checkAccountPassword();
-        showUpdateNotification();
+    }
+
+    private void applyRunOnceTasks() {
+        if (!sRunOnce) {
+            sRunOnce = true;
+            RxHelper.setupGlobalErrorHandler();
+            initGlobalPrefs();
+            initProxy();
+            initVideoStateService();
+            initStreamReminderService();
+            //Utils.initVolume(getContext());
+        }
     }
 
     private void applyRunPerInstanceTasks() {
         if (!mRunPerInstance) {
             mRunPerInstance = true;
-            //clearCache();
             Utils.postDelayed(mRunBackgroundTasks, APP_INIT_DELAY_MS);
             initIntentChain();
             // Fake service to prevent the app destroying?
@@ -110,23 +115,12 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
     private void runBackgroundTasks() {
         YouTubeServiceManager.instance().refreshCacheIfNeeded(); // warm up player engine
-        if (PlayerTweaksData.instance(getContext()).isPlaybackErrorsFixEnabled()) {
+        if (PlayerTweaksData.instance(getContext()).isPersistentAntiBotFixEnabled()) {
             YouTubeServiceManager.instance().applyAntiBotFix();
         }
         enableHistoryIfNeeded();
         Utils.updateChannels(getContext());
         GDriveBackupWorker.schedule(getContext());
-    }
-
-    private void applyRunOnceTasks() {
-        if (!sRunOnce) {
-            sRunOnce = true;
-            RxHelper.setupGlobalErrorHandler();
-            initGlobalData();
-            initProxy();
-            initVideoStateService();
-            initStreamReminderService();
-        }
     }
 
     private void showAccountSelectionIfNeeded() {
@@ -143,7 +137,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         }
     }
 
-    private void showUpdateNotification() {
+    private void checkForUpdates() {
 //        BootDialogPresenter updatePresenter = BootDialogPresenter.instance(getContext());
 //        updatePresenter.start();
         //updatePresenter.unhold();
@@ -174,7 +168,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
      * Inits media service language and context.<br/>
      * NOTE: this command should run before using any of the media service api.
      */
-    private void initGlobalData() {
+    private void initGlobalPrefs() {
         Log.d(TAG, "initGlobalData called...");
 
         if (getContext() != null) {
@@ -189,26 +183,6 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             // Apply proxy config after global prefs but before starting networking.
             if (GeneralData.instance(getContext()).isProxyEnabled()) {
                 new ProxyManager(getContext()).configureSystemProxy();
-            }
-        }
-    }
-
-    private void clearCache2() {
-        if (getContext() != null) {
-            // 1) Remove downloaded apks
-            // 2) Setup language
-            ViewManager.instance(getContext()).clearCaches();
-        }
-    }
-
-    private void clearCache() {
-        if (getContext() != null) {
-            int versionCode = AppInfoHelpers.getAppVersionCode(getContext());
-            if (GeneralData.instance(getContext()).getVersionCode() != versionCode) {
-                GeneralData.instance(getContext()).setVersionCode(versionCode);
-
-                //FileHelpers.deleteCache(getContext());
-                ViewManager.instance(getContext()).clearCaches();
             }
         }
     }
@@ -250,7 +224,13 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         });
 
         mIntentChain.add(intent -> {
-            String channelId = IntentExtractor.extractChannelId(intent);
+            String channelId = null;
+
+            try {
+                channelId = IntentExtractor.extractChannelId(intent);
+            } catch (IllegalArgumentException e) {
+                MessageHelpers.showLongMessage(getContext(), e.getMessage());
+            }
 
             if (channelId != null) {
                 ChannelPresenter channelPresenter = ChannelPresenter.instance(getContext());

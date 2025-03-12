@@ -104,7 +104,6 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private final PlayerTweaksData mPlayerTweaksData;
     private final GeneralData mGeneralData;
     private int mPreviousAction = KeyEvent.ACTION_UP;
-    private boolean mIsSingleKeyDown;
 
     public VideoPlayerGlue(
             Context context,
@@ -393,9 +392,8 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         boolean handled = false;
-        isSingleKeyDown(event.getAction());
 
-        if (mIsSingleKeyDown) {
+        if (isSingleKeyDown(event.getAction())) {
             handled = mActionListener.onKeyDown(keyCode);
 
             if (!handled) {
@@ -411,11 +409,13 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     }
 
     /**
+     * Fixing sticky key press? <br/>
      * Notify key down only when there are paired action available.
      */
-    private void isSingleKeyDown(int action) {
-        mIsSingleKeyDown = action == KeyEvent.ACTION_DOWN && mPreviousAction == KeyEvent.ACTION_UP;
+    private boolean isSingleKeyDown(int action) {
+        boolean result = action == KeyEvent.ACTION_DOWN && mPreviousAction == KeyEvent.ACTION_UP;
         mPreviousAction = action;
+        return result;
     }
 
     private boolean dispatchAction(Action action) {

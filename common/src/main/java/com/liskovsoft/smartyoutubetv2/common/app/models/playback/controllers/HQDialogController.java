@@ -26,7 +26,6 @@ public class HQDialogController extends BasePlayerController {
     private final Map<Integer, OptionCategory> mCategories = new LinkedHashMap<>();
     private final Map<Integer, OptionCategory> mCategoriesInt = new LinkedHashMap<>();
     private final Set<Runnable> mHideListeners = new HashSet<>();
-    private VideoStateController mStateUpdater;
     private PlayerData mPlayerData;
     private PlayerTweaksData mPlayerTweaksData;
     private AppDialogPresenter mAppDialogPresenter;
@@ -36,7 +35,6 @@ public class HQDialogController extends BasePlayerController {
         mPlayerData = PlayerData.instance(getContext());
         mPlayerTweaksData = PlayerTweaksData.instance(getContext());
         mAppDialogPresenter = AppDialogPresenter.instance(getContext());
-        mStateUpdater = getController(VideoStateController.class);
     }
 
     @Override
@@ -47,12 +45,13 @@ public class HQDialogController extends BasePlayerController {
     @Override
     public void onHighQualityClicked() {
         addQualityCategories();
+        //addAudioLanguage();
+        addPresetsCategory();
+        //addVideoZoomCategory();
         addNetworkEngine();
         addVideoBufferCategory();
-        addPresetsCategory();
-        //addAudioLanguage();
         //addAudioDelayCategory();
-//        addPitchEffectCategory();
+        //addPitchEffectCategory();
         //addBackgroundPlaybackCategory();
 
         appendOptions(mCategoriesInt);
@@ -113,12 +112,12 @@ public class HQDialogController extends BasePlayerController {
     }
 
     private void addVideoBufferCategory() {
-        addCategoryInt(AppDialogUtil.createVideoBufferCategory(getContext(), mPlayerData,
+        addCategoryInt(AppDialogUtil.createVideoBufferCategory(getContext(),
                 () -> getPlayer().restartEngine()));
     }
 
     private void addAudioDelayCategory() {
-        addCategoryInt(AppDialogUtil.createAudioShiftCategory(getContext(), mPlayerData,
+        addCategoryInt(AppDialogUtil.createAudioShiftCategory(getContext(),
                 () -> getPlayer().restartEngine()));
     }
 
@@ -127,12 +126,12 @@ public class HQDialogController extends BasePlayerController {
     }
 
     private void addAudioLanguage() {
-        addCategoryInt(AppDialogUtil.createAudioLanguageCategory(getContext(), mPlayerData,
+        addCategoryInt(AppDialogUtil.createAudioLanguageCategory(getContext(),
                 () -> getPlayer().restartEngine()));
     }
 
     private void addNetworkEngine() {
-        addCategoryInt(AppDialogUtil.createNetworkEngineCategory(getContext(), mPlayerTweaksData,
+        addCategoryInt(AppDialogUtil.createNetworkEngineCategory(getContext(),
                 () -> getPlayer().restartEngine()));
     }
 
@@ -177,6 +176,17 @@ public class HQDialogController extends BasePlayerController {
                     getPlayer().showOverlay(false);
                 }
         ));
+    }
+
+    private void addVideoZoomCategory() {
+        addCategoryInt(AppDialogUtil.createVideoZoomCategory(
+                getContext(), () -> {
+                    getPlayer().setVideoZoomMode(mPlayerData.getVideoZoomMode());
+                    getPlayer().setVideoZoom(mPlayerData.getVideoZoom());
+
+                    // Make result easily be spotted by the user
+                    getPlayer().showOverlay(false);
+                }));
     }
 
     private void removeCategoryInt(int id) {

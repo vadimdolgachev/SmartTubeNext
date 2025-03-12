@@ -297,6 +297,7 @@
     <string name="upload_date_last_hour">Letzte Stunde</string>
     <string name="focus_on_search_results">Autofokus auf Suchergebnisse</string>
     <string name="context_menu">Kontextmenü</string>
+    <string name="context_menu_sorting">Kontextmenü-Sortierung</string>
     <string name="add_remove_from_recent_playlist">Hinzufügen/Entfernen aus letzter Wiedergabeliste</string>
     <string name="hide_settings_section">Einstellungen-Kategorie ausblenden (gefährlich!)</string>
     <string name="volume">Lautstärke %s%%</string>
@@ -591,7 +592,7 @@
     <string name="old_update_notifications">Altes Aussehen der Update-Benachrichtigungen</string>
     <string name="dialog_notification">Benachrichtigung über Update mit Pop-up-Dialog</string>
     <string name="mark_as_watched">Als gesehen markieren</string>
-    <string name="player_ui_animations">Bedienfeld-Animationen aktivieren</string>
+    <string name="player_ui_animations">Animationen der Player-Oberfläche aktivieren</string>
     <string name="player_likes_count">Anzahl der Mag ich/Mag ich nicht anzeigen</string>
     <string name="sorting_alphabetically2">Alphabetisch (schnell, animierte Vorschaubilder)</string>
     <string name="sorting_default">Standard (schnell, animierte Vorschaubilder)</string>
@@ -687,4 +688,8 @@
     <string name="screen_dimming_amount">Wert für Bildschirm dimmen</string>
     <string name="screen_dimming_timeout">Zeit für Bildschirm dimmen</string>
     <string name="playlists_rows">Wiedergabelisten-Kategorie als Reihen anzeigen</string>
+    <string name="import_subscriptions_group">Importieren</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Untertitel deaktivieren</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Untertitel aktivieren</string>
+    <string name="my_videos">Meine Videos</string>
 </resources>

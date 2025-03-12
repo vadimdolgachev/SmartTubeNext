@@ -1,8 +1,8 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.data;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.ChapterItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
@@ -72,7 +72,7 @@ public class VideoGroup {
         VideoGroup videoGroup = new VideoGroup();
         // Getting topmost element. Could help when syncing multi rows fragments.
         Video topItem = findTopmostItemWithGroup(items);
-        if (topItem.getGroup() != null) {
+        if (topItem != null && topItem.getGroup() != null) {
             videoGroup.mId = topItem.getGroup().getId();
             videoGroup.mTitle = topItem.getGroup().getTitle();
         }
@@ -248,6 +248,10 @@ public class VideoGroup {
      * Getting topmost element. Could help when syncing multi rows fragments.
      */
     private static Video findTopmostItemWithGroup(List<Video> items) {
+        if (items.isEmpty()) {
+            return null;
+        }
+
         for (int i = (items.size() - 1); i >= 0; i--) {
             Video video = items.get(i);
             if (video.getGroup() != null) {

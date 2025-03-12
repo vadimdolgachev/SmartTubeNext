@@ -3,10 +3,13 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters.settings;
 import android.content.Context;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
+import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 public class SubtitleSettingsPresenter extends BasePresenter<Void> {
     private final PlayerData mPlayerData;
@@ -23,9 +26,10 @@ public class SubtitleSettingsPresenter extends BasePresenter<Void> {
     public void show() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
-        settingsPresenter.appendSingleSwitch(AppDialogUtil.createSubtitleChannelOption(getContext(), mPlayerData));
+        settingsPresenter.appendSingleSwitch(AppDialogUtil.createSubtitleChannelOption(getContext()));
         // Can't work properly. There is no robust language detection.
         //appendSubtitleLanguageCategory(settingsPresenter);
+        appendMoreSubtitlesSwitch(settingsPresenter);
         appendSubtitleStyleCategory(settingsPresenter);
         appendSubtitleSizeCategory(settingsPresenter);
         appendSubtitlePositionCategory(settingsPresenter);
@@ -62,17 +66,26 @@ public class SubtitleSettingsPresenter extends BasePresenter<Void> {
     //}
 
     private void appendSubtitleStyleCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createSubtitleStylesCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createSubtitleStylesCategory(getContext());
         settingsPresenter.appendRadioCategory(category.title, category.options);
     }
 
     private void appendSubtitleSizeCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createSubtitleSizeCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createSubtitleSizeCategory(getContext());
         settingsPresenter.appendRadioCategory(category.title, category.options);
     }
 
     private void appendSubtitlePositionCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createSubtitlePositionCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createSubtitlePositionCategory(getContext());
         settingsPresenter.appendRadioCategory(category.title, category.options);
+    }
+
+    private void appendMoreSubtitlesSwitch(AppDialogPresenter settingsPresenter) {
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from("Unlock more subtitles",
+                option -> {
+                    MediaServiceData.instance().unlockMoreSubtitles(option.isSelected());
+                    YouTubeMediaItemService.instance().invalidateCache(); // Remove current cached video
+                },
+                MediaServiceData.instance().isMoreSubtitlesUnlocked()));
     }
 }

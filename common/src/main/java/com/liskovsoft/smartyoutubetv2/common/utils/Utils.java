@@ -22,6 +22,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
+import android.database.ContentObserver;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
@@ -39,7 +40,6 @@ import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.StyleSpan;
-import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
@@ -54,7 +54,7 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.jakewharton.processphoenix.ProcessPhoenix;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.GlobalConstants;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
@@ -105,7 +105,8 @@ public class Utils {
     public static final float[] SPEED_LIST_EXTRA_LONG = Helpers.range(0.05f, 4f, 0.05f);
     public static final float[] SPEED_LIST_SHORT =
             new float[] {0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
-    private static boolean sIsGlobalVolumeFixed;
+    private static Boolean sGlobalVolumeFixed;
+    private static int sCurrentVolume = -1;
 
     @TargetApi(17)
     public static void displayShareVideoDialog(Context context, String videoId) {
@@ -190,11 +191,9 @@ public class Utils {
         return Uri.parse(url);
     }
 
-    public static boolean isAppInForeground() {
-        ActivityManager.RunningAppProcessInfo appProcessInfo = new ActivityManager.RunningAppProcessInfo();
-        ActivityManager.getMyMemoryState(appProcessInfo);
-        // Skip situation when splash presenter still running
-        return appProcessInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && SplashPresenter.instance(null).getView() == null;
+    public static boolean isAppInForegroundFixed() {
+        // Skip situation when the splash presenter still running
+        return Helpers.isAppInForeground() && SplashPresenter.instance(null).getView() == null;
     }
 
     /**
@@ -251,97 +250,144 @@ public class Utils {
     /**
      * Volume: 0 - 100
      */
-    private static void setGlobalVolume(Context context, int volume, boolean normalize) {
+    private static void setGlobalVolume(Context context, int volume) {
         if (context != null) {
             AudioManager audioManager = (AudioManager) context.getSystemService(GLOBAL_VOLUME_SERVICE);
             if (audioManager != null) {
-                //int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE) / 2; // max volume is too loud
                 int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE);
-                if (normalize) {
-                    streamMaxVolume /= 2; // max volume is too loud
+                double newVolume = streamMaxVolume / 100d * volume;
+                if (sCurrentVolume < volume) {
+                    newVolume = Math.ceil(newVolume);
+                } else {
+                    newVolume = Math.floor(newVolume);
                 }
                 try {
-                    audioManager.setStreamVolume(GLOBAL_VOLUME_TYPE, (int) Math.ceil(streamMaxVolume / 100f * volume), 0);
-                } catch (SecurityException e) {
+                    audioManager.setStreamVolume(GLOBAL_VOLUME_TYPE, (int) newVolume, 0);
+                    sCurrentVolume = volume;
+                } catch (SecurityException | IllegalArgumentException e) {
                     // Not allowed to change Do Not Disturb state
                     e.printStackTrace();
                 }
             }
         }
-
-        sIsGlobalVolumeFixed = getGlobalVolume(context, normalize) != volume;
     }
 
     /**
      * Volume: 0 - 100
      */
-    private static int getGlobalVolume(Context context, boolean normalize) {
+    private static int getGlobalVolume(Context context) {
         if (context != null) {
             AudioManager audioManager = (AudioManager) context.getSystemService(GLOBAL_VOLUME_SERVICE);
             if (audioManager != null) {
-                //int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE) / 2; // max volume is too loud
                 int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE);
-                if (normalize) {
-                    streamMaxVolume /= 2; // max volume is too loud
-                }
                 int streamVolume = audioManager.getStreamVolume(GLOBAL_VOLUME_TYPE);
 
-                return (int) Math.ceil(streamVolume / (streamMaxVolume / 100f));
+                int volume = (int) Math.ceil(streamVolume / (streamMaxVolume / 100f));
+                return Math.abs(sCurrentVolume - volume) == 1 ? sCurrentVolume : volume; // fix small steps (1). volume should be precise.
             }
         }
 
         return 100;
     }
 
-    private static boolean isGlobalVolumeFixed() {
-        return sIsGlobalVolumeFixed;
+    public static void initVolume(Context context) {
+        if (sGlobalVolumeFixed != null) {
+            return;
+        }
+
+        if ("D2150 (Nebula-Cosmos-Max)".equals(Helpers.getDeviceName())) { // A projector
+            sGlobalVolumeFixed = true;
+            return;
+        }
+
+        int volume = getGlobalVolume(context);
+        setGlobalVolume(context, volume > 50 ? volume - 10 : volume + 10);
+        sGlobalVolumeFixed = volume == getGlobalVolume(context);
+        setGlobalVolume(context, volume);
     }
 
+    /**
+     * Global volume may not be supported (see FireTV Stick)
+     */
+    private static boolean isGlobalVolumeFixed(Context context) {
+        if (sGlobalVolumeFixed != null) {
+            return sGlobalVolumeFixed;
+        }
+
+        initVolume(context);
+        return sGlobalVolumeFixed;
+    }
+
+    /**
+     * Volume: 0 - 100
+     */
     public static int getVolume(Context context, PlayerManager player) {
-        return getVolume(context, player, false);
-    }
-
-    /**
-     * Volume: 0 - 100
-     */
-    public static int getVolume(Context context, PlayerManager player, boolean normalize) {
         if (context != null) {
-            return Utils.isGlobalVolumeFixed() ? (int)(player.getVolume() * 100) : Utils.getGlobalVolume(context, normalize);
+            if (isGlobalVolumeFixed(context)) {
+                return getPlayerVolume(player);
+            } else {
+                try {
+                    return getGlobalVolume(context);
+                } catch (SecurityException e) {
+                    // Permission denial: writing to settings requires:android.permission.WRITE_SECURE_SETTINGS
+                    return getPlayerVolume(player);
+                }
+            }
         }
 
         return 100;
     }
 
-    public static void setVolume(Context context, PlayerManager player, int volume) {
-        setVolume(context, player, volume, false);
+    private static int getPlayerVolume(PlayerManager player) {
+        if (player == null) {
+            return -1;
+        }
+        return (int)(player.getVolume() * 100);
     }
 
     /**
      * Volume: 0 - 100
      */
-    @SuppressLint("StringFormatMatches")
-    public static void setVolume(Context context, PlayerManager player, int volume, boolean normalize) {
-        if (context != null) {
-            if (Utils.isGlobalVolumeFixed()) {
-                player.setVolume(volume / 100f);
-            } else {
-                Utils.setGlobalVolume(context, volume, normalize);
-            }
-            // Check that volume is set.
-            // Because global value may not be supported (see FireTV Stick).
-            MessageHelpers.showMessage(context, context.getString(R.string.volume, getVolume(context, player, normalize)));
+    public static void setVolume(Context context, PlayerManager player, int volume) {
+        Log.d(TAG, "setVolume: %s", volume);
+
+        if (volume < 0) {
+            volume = 0;
         }
+
+        if (context != null) {
+            if (isGlobalVolumeFixed(context)) {
+                setPlayerVolume(context, player, volume);
+            } else {
+                try {
+                    setGlobalVolume(context, volume);
+                    showSystemVolumeUI(context);
+                } catch (SecurityException e) {
+                    // Permission denial: writing to settings requires:android.permission.WRITE_SECURE_SETTINGS
+                    setPlayerVolume(context, player, volume);
+                }
+            }
+        }
+    }
+
+    @SuppressLint("StringFormatMatches")
+    private static void setPlayerVolume(Context context, PlayerManager player, int volume) {
+        if (player == null) {
+            return;
+        }
+        player.setVolume(volume / 100f);
+        MessageHelpers.showMessage(context, context.getString(R.string.volume, getPlayerVolume(player)));
     }
 
     public static void volumeUp(Context context, PlayerManager player, boolean up) {
         if (player != null) {
-            int volume = Utils.getVolume(context, player);
-            final int delta = 10; // volume step
+            int volume = getVolume(context, player);
+            final int delta = 1; // volume step
 
             if (up) {
-                Utils.setVolume(context, player, Math.min(volume + delta, 100));
+                setVolume(context, player, Math.min(volume + delta, 100));
             } else {
-                Utils.setVolume(context, player, Math.max(volume - delta, 0));
+                setVolume(context, player, Math.max(volume - delta, 0));
             }
         }
     }
@@ -372,6 +418,27 @@ public class Utils {
             // Because global value may not be supported (see FireTV Stick).
             MessageHelpers.showMessage(context, context.getString(R.string.volume, (int) (player.getVolume() * 100)));
         }
+    }
+
+    public static void showSystemVolumeUI(Context context) {
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        if (audioManager != null) {
+            // Show the system volume bar without changing the volume
+            audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_MUSIC, // Target the music stream
+                    AudioManager.ADJUST_SAME, // No actual adjustment
+                    AudioManager.FLAG_SHOW_UI // This flag displays the volume UI
+            );
+        }
+    }
+
+    public static void registerAudioObserver(Context context, ContentObserver observer) {
+        context.getApplicationContext().getContentResolver()
+                .registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, observer);
+    }
+
+    public static void unregisterAudioObserver(Context context, ContentObserver observer) {
+        context.getApplicationContext().getContentResolver().unregisterContentObserver(observer);
     }
 
     /**
@@ -467,7 +534,14 @@ public class Utils {
         return spannable;
     }
 
+    /**
+     * NOTE: Android 5.1: Italic cause crashes with Arabic fonts
+     */
     public static CharSequence italic(CharSequence string) {
+        if (Build.VERSION.SDK_INT <= 22) {
+            return string;
+        }
+
         SpannableString spannable = new SpannableString(string);
         spannable.setSpan(new StyleSpan(Typeface.ITALIC), 0, spannable.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         return spannable;
@@ -641,12 +715,14 @@ public class Utils {
      * java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
      */
     public static void sendKey(int key) {
-        try {
-            Instrumentation instrumentation = new Instrumentation();
-            instrumentation.sendKeyDownUpSync(key);
-        } catch (SecurityException e) {
-            // Injecting to another application requires INJECT_EVENTS permission
-            e.printStackTrace();
+        if (VERSION.SDK_INT < 33) {
+            try {
+                Instrumentation instrumentation = new Instrumentation();
+                instrumentation.sendKeyDownUpSync(key);
+            } catch (SecurityException e) {
+                // Injecting to another application requires INJECT_EVENTS permission
+                e.printStackTrace();
+            }
         }
     }
 
@@ -655,12 +731,14 @@ public class Utils {
      * java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
      */
     public static void sendKey(KeyEvent keyEvent) {
-        try {
-            Instrumentation instrumentation = new Instrumentation();
-            instrumentation.sendKeySync(keyEvent);
-        } catch (SecurityException e) {
-            // Injecting to another application requires INJECT_EVENTS permission
-            e.printStackTrace();
+        if (VERSION.SDK_INT < 33) {
+            try {
+                Instrumentation instrumentation = new Instrumentation();
+                instrumentation.sendKeySync(keyEvent);
+            } catch (SecurityException e) {
+                // Injecting to another application requires INJECT_EVENTS permission
+                e.printStackTrace();
+            }
         }
     }
 
@@ -731,19 +809,6 @@ public class Utils {
         //}
 
         return true;
-    }
-
-    public static int getThemeColor(Context context, int attrId, int defaultColorResId) {
-        int themeResId = getThemeResId(context, attrId);
-        return ContextCompat.getColor(context, themeResId != -1 ? themeResId : defaultColorResId);
-    }
-
-    public static int getThemeResId(Context context, int attrId) {
-        TypedValue outValue = new TypedValue();
-        if (context.getTheme().resolveAttribute(attrId, outValue, true)) {
-            return outValue.resourceId;
-        }
-        return -1;
     }
 
     public static void enableScreensaver(Context activity, boolean enable) {
@@ -1026,6 +1091,6 @@ public class Utils {
     }
 
     public static boolean isEnoughRam(Context context) {
-        return VERSION.SDK_INT > 21 && Helpers.getDeviceRam(context) > 1_300_000_000; // 1.3 GB
+        return VERSION.SDK_INT > 21 && Helpers.getDeviceRam(context) > 1_500_000_000; // 1.5 GB
     }
 }

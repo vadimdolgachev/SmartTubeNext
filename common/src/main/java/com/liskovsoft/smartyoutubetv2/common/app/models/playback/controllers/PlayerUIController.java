@@ -3,12 +3,12 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.KeyEvent;
-import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.KeyHelpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
@@ -28,7 +28,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.VideoMenuCallback;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroupService;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AutoFrameRateSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.SubtitleTrack;
@@ -56,7 +55,6 @@ public class PlayerUIController extends BasePlayerController {
     private SuggestionsController mSuggestionsController;
     private PlayerData mPlayerData;
     private PlayerTweaksData mPlayerTweaksData;
-    private ChannelGroupService mChannelGroupService;
     private List<PlaylistInfo> mPlaylistInfos;
     private FormatItem mAudioFormat = FormatItem.AUDIO_HQ_MP4A;
     private boolean mEngineReady;
@@ -89,7 +87,6 @@ public class PlayerUIController extends BasePlayerController {
         mSuggestionsController = getController(SuggestionsController.class);
         mPlayerData = PlayerData.instance(getContext());
         mPlayerTweaksData = PlayerTweaksData.instance(getContext());
-        mChannelGroupService = ChannelGroupService.instance(getContext());
 
         // Could be set once per activity creation (view layout stuff)
         getPlayer().setVideoZoomMode(mPlayerData.getVideoZoomMode());
@@ -211,15 +208,15 @@ public class PlayerUIController extends BasePlayerController {
             settingsPresenter.showDialog();
         }));
 
-        settingsPresenter.appendSingleSwitch(AppDialogUtil.createSubtitleChannelOption(getContext(), mPlayerData));
+        settingsPresenter.appendSingleSwitch(AppDialogUtil.createSubtitleChannelOption(getContext()));
 
-        OptionCategory stylesCategory = AppDialogUtil.createSubtitleStylesCategory(getContext(), mPlayerData);
+        OptionCategory stylesCategory = AppDialogUtil.createSubtitleStylesCategory(getContext());
         settingsPresenter.appendRadioCategory(stylesCategory.title, stylesCategory.options);
 
-        OptionCategory sizeCategory = AppDialogUtil.createSubtitleSizeCategory(getContext(), mPlayerData);
+        OptionCategory sizeCategory = AppDialogUtil.createSubtitleSizeCategory(getContext());
         settingsPresenter.appendRadioCategory(sizeCategory.title, sizeCategory.options);
 
-        OptionCategory positionCategory = AppDialogUtil.createSubtitlePositionCategory(getContext(), mPlayerData);
+        OptionCategory positionCategory = AppDialogUtil.createSubtitlePositionCategory(getContext());
         settingsPresenter.appendRadioCategory(positionCategory.title, positionCategory.options);
 
         settingsPresenter.showDialog(subtitlesOrigCategoryTitle, this::setSubtitleButtonState);
@@ -334,7 +331,7 @@ public class PlayerUIController extends BasePlayerController {
         setPlaylistAddButtonStateCached();
         setSubtitleButtonState();
         getPlayer().setButtonState(R.id.action_rotate, mPlayerData.getVideoRotation() == 0 ? PlayerUI.BUTTON_OFF : PlayerUI.BUTTON_ON);
-        getPlayer().setButtonState(R.id.action_subscribe, (metadata.isSubscribed() || mChannelGroupService.isSubscribed(metadata.getChannelId())) ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
+        getPlayer().setButtonState(R.id.action_subscribe, metadata.isSubscribed() ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
         getPlayer().setButtonState(R.id.action_afr, mPlayerData.isAfrEnabled() ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
     }
 
@@ -477,7 +474,7 @@ public class PlayerUIController extends BasePlayerController {
     @Override
     public void onVideoZoomClicked() {
         OptionCategory videoZoomCategory = AppDialogUtil.createVideoZoomCategory(
-                getContext(), mPlayerData, () -> {
+                getContext(), () -> {
                     getPlayer().setVideoZoomMode(mPlayerData.getVideoZoomMode());
                     getPlayer().setVideoZoom(mPlayerData.getVideoZoom());
                     getPlayer().showControls(false);
@@ -606,6 +603,10 @@ public class PlayerUIController extends BasePlayerController {
     }
 
     private boolean handleMenuKey(int keyCode) {
+        if (getPlayer() == null) {
+            return false;
+        }
+
         boolean controlsShown = getPlayer().isOverlayShown();
         boolean suggestionsShown = getPlayer().isSuggestionsShown();
 
@@ -672,8 +673,8 @@ public class PlayerUIController extends BasePlayerController {
 
     private boolean handleLeftRightSkip(int keyCode) {
         if (getPlayer().isOverlayShown() || getPlayer().getVideo() == null ||
-                (getPlayer().getVideo().isShorts && !mPlayerTweaksData.isQuickSkipShortsEnabled() ||
-                (!getPlayer().getVideo().isShorts && !mPlayerTweaksData.isQuickSkipVideosEnabled()))) {
+                (getPlayer().getVideo().belongsToShortsGroup() && !mPlayerTweaksData.isQuickSkipShortsEnabled() ||
+                (!getPlayer().getVideo().belongsToShortsGroup() && !mPlayerTweaksData.isQuickSkipVideosEnabled()))) {
             return false;
         }
 
@@ -829,16 +830,6 @@ public class PlayerUIController extends BasePlayerController {
             return;
         }
 
-        if (!YouTubeSignInService.instance().isSigned()) {
-            //MessageHelpers.showMessage(getContext(), R.string.msg_signed_users_only);
-
-            mChannelGroupService.subscribe(getPlayer().getVideo(), buttonState == PlayerUI.BUTTON_OFF);
-
-            getPlayer().getVideo().isSubscribed = buttonState == PlayerUI.BUTTON_OFF;
-            getPlayer().setButtonState(R.id.action_subscribe, buttonState == PlayerUI.BUTTON_OFF ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
-            return;
-        }
-
         if (buttonState == PlayerUI.BUTTON_OFF) {
             callMediaItemObservable(mMediaItemService::subscribeObserve);
         } else {
@@ -882,7 +873,7 @@ public class PlayerUIController extends BasePlayerController {
 
     private void showRepeatModeDialog(int buttonState) {
         OptionCategory category = AppDialogUtil.createPlaybackModeCategory(
-                getContext(), mPlayerData, () -> {
+                getContext(), () -> {
                     getPlayer().setButtonState(R.id.action_repeat, mPlayerData.getRepeatMode());
                 });
 
@@ -947,12 +938,12 @@ public class PlayerUIController extends BasePlayerController {
     private void showScreenOffDialog() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
         OptionCategory dimmingCategory =
-                AppDialogUtil.createPlayerScreenOffDimmingCategory(getContext(), mPlayerTweaksData, () -> {
+                AppDialogUtil.createPlayerScreenOffDimmingCategory(getContext(), () -> {
                     prepareScreenOff();
                     applyScreenOff(PlayerUI.BUTTON_OFF);
                 });
         OptionCategory category =
-                AppDialogUtil.createPlayerScreenOffTimeoutCategory(getContext(), mPlayerTweaksData, () -> {
+                AppDialogUtil.createPlayerScreenOffTimeoutCategory(getContext(), () -> {
                     prepareScreenOff();
                     applyScreenOffTimeout(PlayerUI.BUTTON_OFF);
                 });
@@ -963,7 +954,7 @@ public class PlayerUIController extends BasePlayerController {
 
     private void showSoundOffDialog() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
-        OptionCategory audioVolumeCategory = AppDialogUtil.createAudioVolumeCategory(getContext(), mPlayerData, () -> {
+        OptionCategory audioVolumeCategory = AppDialogUtil.createAudioVolumeCategory(getContext(), () -> {
             applySoundOff(mPlayerData.getPlayerVolume() == 0 ? PlayerUI.BUTTON_OFF : PlayerUI.BUTTON_ON);
             getPlayer().setVolume(mPlayerData.getPlayerVolume());
         });

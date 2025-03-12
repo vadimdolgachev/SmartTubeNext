@@ -19,6 +19,8 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
+import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +122,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendVideoBufferCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createVideoBufferCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createVideoBufferCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
@@ -130,22 +132,22 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendVideoZoomCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createVideoZoomCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createVideoZoomCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
     private void appendAudioLanguageCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createAudioLanguageCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createAudioLanguageCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
     private void appendAudioShiftCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createAudioShiftCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createAudioShiftCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
     private void appendMasterVolumeCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createAudioVolumeCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createAudioVolumeCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
@@ -166,7 +168,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendRememberSpeedCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createRememberSpeedCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createRememberSpeedCategory(getContext());
 
         settingsPresenter.appendRadioCategory(category.title, category.options);
     }
@@ -174,15 +176,15 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     private void appendVideoSpeedCategory(AppDialogPresenter settingsPresenter) {
         settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.video_speed), optionItem -> {
             AppDialogPresenter settingsPresenter2 = AppDialogPresenter.instance(getContext());
-            settingsPresenter2.appendCategory(AppDialogUtil.createSpeedListCategory(getContext(), null, mPlayerData));
-            settingsPresenter2.appendCategory(AppDialogUtil.createRememberSpeedCategory(getContext(), mPlayerData));
-            settingsPresenter2.appendCategory(AppDialogUtil.createSpeedMiscCategory(getContext(), mPlayerTweaksData));
+            settingsPresenter2.appendCategory(AppDialogUtil.createSpeedListCategory(getContext(), null));
+            settingsPresenter2.appendCategory(AppDialogUtil.createRememberSpeedCategory(getContext()));
+            settingsPresenter2.appendCategory(AppDialogUtil.createSpeedMiscCategory(getContext()));
             settingsPresenter2.showDialog(getContext().getString(R.string.video_speed));
         }));
     }
 
     private void appendScreenOffTimeoutCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createPlayerScreenOffTimeoutCategory(getContext(), mPlayerTweaksData, null);
+        OptionCategory category = AppDialogUtil.createPlayerScreenOffTimeoutCategory(getContext(), null);
 
         settingsPresenter.appendRadioCategory(category.title, category.options);
     }
@@ -234,12 +236,26 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     private void appendDeveloperCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
-        options.add(UiOptionItem.from("Playback buffering fix",
+        options.add(UiOptionItem.from("Premium users only. Fix for incomplete video format list",
                 option -> {
-                    mPlayerTweaksData.enablePlaybackErrorsFix(option.isSelected());
+                    MediaServiceData.instance().enablePremiumFix(option.isSelected());
                     mRestartApp = true;
                 },
-                mPlayerTweaksData.isPlaybackErrorsFixEnabled()));
+                MediaServiceData.instance().isPremiumFixEnabled()));
+
+        options.add(UiOptionItem.from("Unlock more subtitles",
+                option -> {
+                    MediaServiceData.instance().unlockMoreSubtitles(option.isSelected());
+                    YouTubeMediaItemService.instance().invalidateCache(); // Remove current cached video
+                },
+                MediaServiceData.instance().isMoreSubtitlesUnlocked()));
+
+        options.add(UiOptionItem.from("Playback buffering fix",
+                option -> {
+                    mPlayerTweaksData.enablePersistentAntiBotFix(option.isSelected());
+                    mRestartApp = true;
+                },
+                mPlayerTweaksData.isPersistentAntiBotFixEnabled()));
 
         // Oculus Quest fix: back button not closing the activity
         options.add(UiOptionItem.from("Oculus Quest fix",
@@ -249,10 +265,10 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 },
                 mPlayerTweaksData.isOculusQuestFixEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.disable_network_error_fixing),
-                getContext().getString(R.string.disable_network_error_fixing_desc),
-                option -> mPlayerTweaksData.disableNetworkErrorFixing(option.isSelected()),
-                mPlayerTweaksData.isNetworkErrorFixingDisabled()));
+        //options.add(UiOptionItem.from(getContext().getString(R.string.disable_network_error_fixing),
+        //        getContext().getString(R.string.disable_network_error_fixing_desc),
+        //        option -> mPlayerTweaksData.disableNetworkErrorFixing(option.isSelected()),
+        //        mPlayerTweaksData.isNetworkErrorFixingDisabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.prefer_ipv4),
                 getContext().getString(R.string.prefer_ipv4_desc),
@@ -487,25 +503,29 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendPlaybackModeCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createPlaybackModeCategory(getContext(), mPlayerData);
+        OptionCategory category = AppDialogUtil.createPlaybackModeCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
     private void appendNetworkEngineCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createNetworkEngineCategory(getContext(), mPlayerTweaksData);
+        OptionCategory category = AppDialogUtil.createNetworkEngineCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_section_playlist),
-                option -> mPlayerTweaksData.enableSectionPlaylist(option.isSelected()),
-                mPlayerTweaksData.isSectionPlaylistEnabled()));
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_audio_focus),
+                option -> mPlayerTweaksData.enableAudioFocus(option.isSelected()),
+                mPlayerTweaksData.isAudioFocusEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_auto_volume),
                 option -> mPlayerTweaksData.enablePlayerAutoVolume(option.isSelected()),
                 mPlayerTweaksData.isPlayerAutoVolumeEnabled()));
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_section_playlist),
+                option -> mPlayerTweaksData.enableSectionPlaylist(option.isSelected()),
+                mPlayerTweaksData.isSectionPlaylistEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_chapter_notification),
                 option -> mPlayerTweaksData.enableChapterNotification(option.isSelected()),
@@ -585,8 +605,8 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_global_focus),
                 getContext().getString(R.string.player_global_focus_desc),
-                option -> mPlayerTweaksData.enablePlayerGlobalFocus(option.isSelected()),
-                mPlayerTweaksData.isPlayerGlobalFocusEnabled()));
+                option -> mPlayerTweaksData.enableSimplePlayerNavigation(option.isSelected()),
+                mPlayerTweaksData.isSimplePlayerNavigationEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_ui_on_next),
                 option -> mPlayerTweaksData.enablePlayerUiOnNext(option.isSelected()),
@@ -604,12 +624,13 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerData.enableTooltips(option.isSelected()),
                 mPlayerData.isTooltipsEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_show_tooltips) + ": " + getContext().getString(R.string.long_press_for_options),
-                option -> {
-                    mGeneralData.enableFirstUseTooltip(option.isSelected());
-                    mRestartApp = true;
-                },
-                mGeneralData.isFirstUseTooltipEnabled()));
+        // See: Utils.updateTooltip
+        //options.add(UiOptionItem.from(getContext().getString(R.string.player_show_tooltips) + ": " + getContext().getString(R.string.long_press_for_options),
+        //        option -> {
+        //            mGeneralData.enableFirstUseTooltip(option.isSelected());
+        //            mRestartApp = true;
+        //        },
+        //        mGeneralData.isFirstUseTooltipEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_button_long_click),
                 option -> mPlayerTweaksData.enableButtonLongClick(option.isSelected()),

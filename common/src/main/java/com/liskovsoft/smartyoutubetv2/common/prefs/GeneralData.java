@@ -2,19 +2,13 @@ package com.liskovsoft.smartyoutubetv2.common.prefs;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.os.Build;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.sharedutils.helpers.DateHelper;
+
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
-import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -147,26 +141,6 @@ public class GeneralData implements ProfileChangeListener {
         return mOldPinnedItems;
     }
 
-    public void hideShortsFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromSubscriptions(enable);
-    }
-
-    public boolean isHideShortsFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromSubscriptionsEnabled();
-    }
-
-    public void hideShortsFromChannel(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromChannel(enable);
-    }
-
-    public boolean isHideShortsFromChannelEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromChannelEnabled();
-    }
-
-    public void hideStreamsFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideStreamsFromSubscriptions(enable);
-    }
-
     public void rememberSubscriptionsPosition(boolean remember) {
         mRememberSubscriptionsPosition = remember;
         persistState();
@@ -185,22 +159,6 @@ public class GeneralData implements ProfileChangeListener {
         return mRememberPinnedPosition;
     }
 
-    public void hideWatchedFromHome(boolean enable) {
-        GlobalPreferences.sInstance.hideWatchedFromHome(enable);
-    }
-
-    public boolean isHideWatchedFromHomeEnabled() {
-        return GlobalPreferences.sInstance.isHideWatchedFromHomeEnabled();
-    }
-
-    public void hideWatchedFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideWatchedFromSubscriptions(enable);
-    }
-
-    public boolean isHideWatchedFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideWatchedFromSubscriptionsEnabled();
-    }
-
     public void hideWatchedFromNotifications(boolean enable) {
         mIsHideWatchedFromNotificationsEnabled = enable;
         persistState();
@@ -208,58 +166,6 @@ public class GeneralData implements ProfileChangeListener {
 
     public boolean isHideWatchedFromNotificationsEnabled() {
         return mIsHideWatchedFromNotificationsEnabled;
-    }
-
-    public boolean isHideStreamsFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideStreamsFromSubscriptionsEnabled();
-    }
-
-    public void hideShortsFromHome(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromHome(enable);
-    }
-
-    public boolean isHideShortsFromHomeEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromHomeEnabled();
-    }
-
-    public void hideShortsFromHistory(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromHistory(enable);
-    }
-
-    public boolean isHideShortsFromHistoryEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromHistoryEnabled();
-    }
-
-    public void hideShortsFromTrending(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromTrending(enable);
-    }
-
-    public boolean isHideShortsFromTrendingEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromTrendingEnabled();
-    }
-
-    public void hideUpcomingFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideUpcomingFromSubscriptions(enable);
-    }
-
-    public boolean isHideUpcomingFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideUpcomingFromSubscriptionsEnabled();
-    }
-
-    public void hideUpcomingFromChannel(boolean enable) {
-        GlobalPreferences.sInstance.hideUpcomingFromChannel(enable);
-    }
-
-    public boolean isHideUpcomingFromChannelEnabled() {
-        return GlobalPreferences.sInstance.isHideUpcomingFromChannelEnabled();
-    }
-
-    public void hideUpcomingFromHome(boolean enable) {
-        GlobalPreferences.sInstance.hideUpcomingFromHome(enable);
-    }
-
-    public boolean isHideUpcomingFromHomeEnabled() {
-        return GlobalPreferences.sInstance.isHideUpcomingFromHomeEnabled();
     }
 
     public void disableScreensaver(boolean enable) {

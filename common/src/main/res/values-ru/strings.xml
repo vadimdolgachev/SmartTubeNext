@@ -297,6 +297,7 @@
     <string name="upload_date_last_hour">Последний час</string>
     <string name="focus_on_search_results">Автофокусировка на результатах поиска</string>
     <string name="context_menu">Контекстное меню</string>
+    <string name="context_menu_sorting">Сортировка контекстного меню</string>
     <string name="add_remove_from_recent_playlist">Добавить/Удалить из недавнего плейлиста</string>
     <string name="hide_settings_section">Прятать раздел Настройки (опасно!)</string>
     <string name="volume">Громкость %s%%</string>
@@ -586,7 +587,7 @@
     <string name="old_update_notifications">Старый вид уведомлений о доступном обновлении</string>
     <string name="dialog_notification">Уведомлять про обновление всплывающим диалогом</string>
     <string name="mark_as_watched">Отметить как просмотренное</string>
-    <string name="player_ui_animations">Включить анимацию панели управления</string>
+    <string name="player_ui_animations">Включить анимацию интерфейса плеера</string>
     <string name="player_likes_count">Отображать количество лайков/дислайков</string>
     <string name="sorting_alphabetically2">По алфавиту (быстро, анимированные превью)</string>
     <string name="sorting_default">По умолчанию (быстро, анимированные превью)</string>
@@ -680,5 +681,9 @@
     <string name="screen_dimming_amount">Степень затемнения экрана</string>
     <string name="screen_dimming_timeout">Тайм-аут затемнения экрана</string>
     <string name="playlists_rows">Отображать раздел Плейлисты в виде строк</string>
+    <string name="import_subscriptions_group">Импортировать</string>
+    <string name="my_videos">Ваши видео</string>
+    <string name="player_audio_focus">Аудиофокус (пауза, если обнаружены другие плееры)</string>
+    <string name="paid_content_notification">Уведомление о платном содержимом</string>
     <string name="cancel">Отмена</string>
 </resources>

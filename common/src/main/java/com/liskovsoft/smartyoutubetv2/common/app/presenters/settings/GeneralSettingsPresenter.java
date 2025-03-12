@@ -3,7 +3,7 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters.settings;
 import android.annotation.SuppressLint;
 import android.content.Context;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.okhttp.OkHttpManager;
@@ -66,6 +66,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         //appendBootToSection(settingsPresenter);
         appendEnabledSections(settingsPresenter);
         //appendContextMenuItemsCategory(settingsPresenter);
+        //appendContextMenuSortingCategory(settingsPresenter);
         //appendTopButtonsCategory(settingsPresenter);
         // appendHideUnwantedContent(settingsPresenter);
         //appendAppExitCategory(settingsPresenter);
@@ -112,62 +113,67 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
 
     private void appendHideUnwantedContent(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
+        MediaServiceData data = MediaServiceData.instance();
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_mixes),
-                option -> MediaServiceData.instance().hideContent(MediaServiceData.CONTENT_MIXES, option.isSelected()),
-                MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_MIXES)));
+                option -> data.hideContent(MediaServiceData.CONTENT_MIXES, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_MIXES)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_watch_later),
-                option -> MediaServiceData.instance().hideContent(MediaServiceData.CONTENT_WATCHED_WATCH_LATER, option.isSelected()),
-                MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER)));
+                option -> data.hideContent(MediaServiceData.CONTENT_WATCHED_WATCH_LATER, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_home),
-                option -> mGeneralData.hideWatchedFromHome(option.isSelected()),
-                mGeneralData.isHideWatchedFromHomeEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_WATCHED_HOME, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_WATCHED_HOME)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_subscriptions),
-                option -> mGeneralData.hideWatchedFromSubscriptions(option.isSelected()),
-                mGeneralData.isHideWatchedFromSubscriptionsEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_WATCHED_SUBSCRIPTIONS, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_WATCHED_SUBSCRIPTIONS)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_notifications),
                 option -> mGeneralData.hideWatchedFromNotifications(option.isSelected()),
                 mGeneralData.isHideWatchedFromNotificationsEnabled()));
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts),
+                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS)));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts_from_search),
-                option -> MediaServiceData.instance().hideContent(MediaServiceData.CONTENT_SHORTS_SEARCH, option.isSelected()),
-                MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_SHORTS_SEARCH)));
+                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_SEARCH, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_SEARCH)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts_from_home),
-                option -> mGeneralData.hideShortsFromHome(option.isSelected()),
-                mGeneralData.isHideShortsFromHomeEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_HOME, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_HOME)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts_channel),
-                option -> mGeneralData.hideShortsFromChannel(option.isSelected()),
-                mGeneralData.isHideShortsFromChannelEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_CHANNEL, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_CHANNEL)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts_from_history),
-                option -> mGeneralData.hideShortsFromHistory(option.isSelected()),
-                mGeneralData.isHideShortsFromHistoryEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_HISTORY, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_HISTORY)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts_from_trending),
-                option -> mGeneralData.hideShortsFromTrending(option.isSelected()),
-                mGeneralData.isHideShortsFromTrendingEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_TRENDING, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_TRENDING)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_streams),
-                option -> mGeneralData.hideStreamsFromSubscriptions(option.isSelected()),
-                mGeneralData.isHideStreamsFromSubscriptionsEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_STREAMS_SUBSCRIPTIONS, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_STREAMS_SUBSCRIPTIONS)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_upcoming),
-                option -> mGeneralData.hideUpcomingFromSubscriptions(option.isSelected()),
-                mGeneralData.isHideUpcomingFromSubscriptionsEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_UPCOMING_SUBSCRIPTIONS, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_SUBSCRIPTIONS)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_upcoming_home),
-                option -> mGeneralData.hideUpcomingFromHome(option.isSelected()),
-                mGeneralData.isHideUpcomingFromHomeEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_UPCOMING_HOME, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_HOME)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_upcoming_channel),
-                option -> mGeneralData.hideUpcomingFromChannel(option.isSelected()),
-                mGeneralData.isHideUpcomingFromChannelEnabled()));
+                option -> data.hideContent(MediaServiceData.CONTENT_UPCOMING_CHANNEL, option.isSelected()),
+                data.isContentHidden(MediaServiceData.CONTENT_UPCOMING_CHANNEL)));
 
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.hide_unwanted_content), options);
     }
@@ -197,6 +203,25 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.context_menu), options);
     }
 
+    private void appendContextMenuSortingCategory(AppDialogPresenter settingsPresenter) {
+        List<OptionItem> options = new ArrayList<>();
+
+        Map<Long, Integer> menuNames = getMenuNames();
+
+        for (Long menuItem : mMainUIData.getMenuItemsOrdered()) {
+            Integer nameResId = menuNames.get(menuItem);
+
+            if (nameResId == null || !mMainUIData.isMenuItemEnabled(menuItem)) {
+                continue;
+            }
+
+            options.add(UiOptionItem.from(getContext().getString(nameResId), optionItem ->
+                    showMenuItemOrderDialog(menuItem), false));
+        }
+
+        settingsPresenter.appendRadioCategory(getContext().getString(R.string.context_menu_sorting), options);
+    }
+
     private void showMenuItemOrderDialog(Long menuItem) {
         AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
 
@@ -213,26 +238,24 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         List<Long> menuItemsOrdered = mMainUIData.getMenuItemsOrdered();
         int size = menuItemsOrdered.size();
         int currentIndex = mMainUIData.getMenuItemIndex(menuItem);
+        int counter = 0;
 
         for (int i = 0; i < size; i++) {
-            Integer nameResId = menuNames.get(menuItemsOrdered.get(i));
+            Long item = menuItemsOrdered.get(i);
+            Integer nameResId = menuNames.get(item);
 
-            if (nameResId == null) {
+            if (nameResId == null || !mMainUIData.isMenuItemEnabled(item)) {
                 continue;
             }
 
             final int index = i;
-            options.add(UiOptionItem.from((i + 1) + " " + getContext().getString(nameResId), optionItem -> {
+            options.add(UiOptionItem.from((counter + 1) + " " + getContext().getString(nameResId), optionItem -> {
                 if (optionItem.isSelected()) {
                     mMainUIData.setMenuItemIndex(index, menuItem);
                     dialog.goBack();
-
-                    //AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
-                    //settingsPresenter.clearBackstack();
-                    //appendContextMenuItemsCategory(settingsPresenter);
-                    //settingsPresenter.showDialog();
                 }
             }, currentIndex == i));
+            counter++;
         }
 
         String itemName = getContext().getString(currentNameResId);
@@ -240,25 +263,6 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
 
         dialog.showDialog();
     }
-
-    //private void appendTopButtonsCategory(AppDialogPresenter settingsPresenter) {
-    //    List<OptionItem> options = new ArrayList<>();
-    //
-    //    for (int[] pair : new int[][] {
-    //            {R.string.settings_search, MainUIData.TOP_BUTTON_SEARCH},
-    //            {R.string.settings_language_country, MainUIData.TOP_BUTTON_CHANGE_LANGUAGE},
-    //            {R.string.settings_accounts, MainUIData.TOP_BUTTON_BROWSE_ACCOUNTS}}) {
-    //        options.add(UiOptionItem.from(getContext().getString(pair[0]), optionItem -> {
-    //            if (optionItem.isSelected()) {
-    //                mMainUIData.enableTopButton(pair[1]);
-    //            } else {
-    //                mMainUIData.disableTopButton(pair[1]);
-    //            }
-    //        }, mMainUIData.isTopButtonEnabled(pair[1])));
-    //    }
-    //
-    //    settingsPresenter.appendCheckedCategory(getContext().getString(R.string.various_buttons), options);
-    //}
 
     private void appendBootToSection(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();

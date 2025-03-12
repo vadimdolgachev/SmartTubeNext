@@ -5,20 +5,21 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.ChapterItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.DislikeData;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
+
+import com.liskovsoft.mediaserviceinterfaces.data.ItemGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem;
+import com.liskovsoft.mediaserviceinterfaces.data.DislikeData;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.ItemGroup.Item;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.helpers.DateHelper;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroup;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroup.Channel;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
 
@@ -38,7 +39,7 @@ public final class Video {
     private static final float RESTORE_POSITION_PERCENTS = 10; // min value for immediately closed videos
     public int id;
     public String title;
-    public String altTitle;
+    public String deArrowTitle;
     public String secondTitle;
     private String metadataTitle;
     private String metadataSecondTitle;
@@ -78,7 +79,7 @@ public final class Video {
     public boolean isSynced;
     public final long timestamp = System.currentTimeMillis();
     public int sectionId = -1;
-    public int channelGroupId = -1;
+    public String channelGroupId;
     public long startTimeMs;
     public long pendingPosMs;
     public boolean fromQueue;
@@ -91,6 +92,7 @@ public final class Video {
     public float volume = 1.0f;
     public boolean deArrowProcessed;
     public boolean isLiveEnd;
+    public boolean forceSectionPlaylist;
     private int startSegmentNum;
     private long liveDurationMs = -1;
     private long durationMs = -1;
@@ -207,22 +209,21 @@ public final class Video {
         return video;
     }
 
-    public static Video from(ChannelGroup group) {
+    public static Video from(ItemGroup group) {
         Video video = new Video();
-        video.title = group.title;
-        video.cardImageUrl = group.iconUrl;
-        video.channelGroupId = group.id;
+        video.title = group.getTitle();
+        video.cardImageUrl = group.getIconUrl();
+        video.channelGroupId = group.getId();
         return video;
     }
 
-    public static Video from(Channel channel) {
+    public static Video from(Item channel) {
         Video video = new Video();
-        video.title = channel.title;
-        video.cardImageUrl = channel.iconUrl;
-        video.channelId = channel.channelId;
+        video.title = channel.getTitle();
+        video.cardImageUrl = channel.getIconUrl();
+        video.channelId = channel.getChannelId();
         return video;
     }
-
     ///**
     // * Don't change the logic from equality by reference!<br/>
     // * Or adapters won't work properly (same video may appear twice).
@@ -286,10 +287,18 @@ public final class Video {
     }
 
     public String getTitle() {
-        return altTitle != null ? altTitle : metadataTitle != null ? metadataTitle : title;
+        return deArrowTitle != null ? deArrowTitle : title;
     }
 
     public String getSecondTitle() {
+        return secondTitle;
+    }
+
+    public String getPlayerTitle() {
+        return deArrowTitle != null ? deArrowTitle : metadataTitle != null ? metadataTitle : title;
+    }
+
+    public String getPlayerSubtitle() {
         // Don't sync future translation because of not precise info
         return metadataSecondTitle != null && !isUpcoming ? metadataSecondTitle : secondTitle;
     }
@@ -447,7 +456,12 @@ public final class Video {
         result.metadataSecondTitle = Helpers.parseStr(split[18]);
         result.badge = Helpers.parseStr(split[19]);
         result.isLive = Helpers.parseBoolean(split[20]);
-        result.channelGroupId = Helpers.parseInt(split[21]);
+        result.channelGroupId = Helpers.parseStr(split[21]);
+
+        // Reset old type (int)
+        if (Helpers.equals(result.channelGroupId, "-1")) {
+            result.channelGroupId = null;
+        }
 
         return result;
     }
@@ -529,7 +543,7 @@ public final class Video {
     }
 
     public boolean isMix() {
-        return !isLive && badge != null && !Helpers.hasDigits(badge) && (durationMs <= 0 || isSynced) && (hasPlaylist() || hasChannel() || hasNestedItems());
+        return !isLive && Helpers.hasWords(badge) && (durationMs <= 0 || isSynced) && (hasPlaylist() || hasChannel() || hasNestedItems());
     }
 
     public boolean isFullLive() {
@@ -631,6 +645,10 @@ public final class Video {
 
     public boolean belongsToShorts() {
         return belongsToGroup(MediaGroup.TYPE_SHORTS);
+    }
+
+    public boolean belongsToShortsGroup() {
+        return isShorts && (belongsToShorts() || belongsToHome());
     }
 
     public boolean belongsToSearch() {
@@ -852,7 +870,8 @@ public final class Video {
 
     public boolean isSectionPlaylistEnabled(Context context) {
         return PlayerTweaksData.instance(context).isSectionPlaylistEnabled() && getGroup() != null &&
-                (playlistId == null || PLAYLIST_LIKED_MUSIC.equals(playlistId) || nextMediaItem == null || belongsToSearch() || belongsToHome()) &&
+                (playlistId == null || PLAYLIST_LIKED_MUSIC.equals(playlistId) || nextMediaItem == null || forceSectionPlaylist ||
+                        (!isMix() && !belongsToSamePlaylistGroup())) && // skip hidden playlists (music videos usually)
                     (!isRemote || remotePlaylistId == null);
     }
 }
