@@ -168,10 +168,10 @@ public class VideoLoaderController extends BasePlayerController {
         Log.e(TAG, "Player error occurred: %s. Trying to fix…", type);
 
         mLastErrorType = type;
-        runErrorAction(type, rendererIndex, error);
-        if (!mIsWasVideoStartError && mLastVideo != null) {
-            Analytics.sendVideoStartError(mLastVideo.videoId,
-                    mLastVideo.title,
+        runEngineErrorAction(type, rendererIndex, error);
+        if (!mIsWasVideoStartError && getVideo() != null) {
+            Analytics.sendVideoStartError(getVideo().videoId,
+                    getVideo().title,
                     error.getMessage());
             mIsWasVideoStartError = true;
         }
@@ -395,12 +395,12 @@ public class VideoLoaderController extends BasePlayerController {
             if (formatInfo.isHistoryBroken()) { // bot check error or the video is hidden
                 YouTubeServiceManager.instance().applyNoPlaybackFix();
                 YouTubeServiceManager.instance().applyAntiBotFix();
-                mPlayerTweaksData.enablePersistentAntiBotFix(true);
+                //mPlayerTweaksData.enablePersistentAntiBotFix(true);
                 scheduleReloadVideoTimer(5_000);
             } else {scheduleNextVideoTimer(5_000);
             if (!mIsWasVideoStartError) {
-                Analytics.sendVideoStartError(mLastVideo.videoId,
-                        mLastVideo.title,
+                Analytics.sendVideoStartError(getVideo().videoId,
+                        getVideo().title,
                         formatInfo.getPlayabilityStatus());
                 mIsWasVideoStartError = true;
             }
@@ -408,7 +408,7 @@ public class VideoLoaderController extends BasePlayerController {
                 SignInPresenter.instance(getActivity()).start();
                 getActivity().finish();
             }
-        }} else if (formatInfo.containsDashVideoFormats() && acceptDashVideoFormats(formatInfo)) {
+        }} else if (formatInfo.containsDashVideoFormats() && acceptDashVideo(formatInfo)) {
             Log.d(TAG, "Found regular video in dash format. Loading...");
 
             mMpdStreamAction = formatInfo.createMpdStreamObservable()
@@ -439,8 +439,8 @@ public class VideoLoaderController extends BasePlayerController {
             bgImageUrl = getVideo().getBackgroundUrl();
             scheduleReloadVideoTimer(30 * 1_000);
             if (!mIsWasVideoStartError) {
-                Analytics.sendVideoStartError(mLastVideo.videoId,
-                        mLastVideo.title,
+                Analytics.sendVideoStartError(getVideo().videoId,
+                        getVideo().title,
                         formatInfo.getPlayabilityStatus());
                 mIsWasVideoStartError = true;
             }
@@ -861,8 +861,8 @@ public class VideoLoaderController extends BasePlayerController {
     @Override
     public void onPlay() {
         Utils.removeCallbacks(mOnLongBuffering);
-        if (!mIsWasStarted && mLastVideo != null) {
-            Analytics.sendVideoStarted(mLastVideo.videoId, mLastVideo.title);
+        if (!mIsWasStarted && getVideo() != null) {
+            Analytics.sendVideoStarted(getVideo().videoId, getVideo().title);
             mIsWasStarted = true;
         }
     }

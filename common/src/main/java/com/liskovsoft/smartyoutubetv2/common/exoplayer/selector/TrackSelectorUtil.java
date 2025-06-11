@@ -134,7 +134,7 @@ public class TrackSelectorUtil {
         return id != null ? isHdrFormat(id) : isHdrCodec(codecs);
     }
 
-    private static boolean isHdrCodec(String codec) {
+    public static boolean isHdrCodec(String codec) {
         if (codec == null) {
             return false;
         }

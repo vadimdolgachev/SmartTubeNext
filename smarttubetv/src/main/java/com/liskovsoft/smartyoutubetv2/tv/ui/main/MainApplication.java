@@ -72,28 +72,5 @@ public class MainApplication extends MultiDexApplication { // fix: Didn't find c
         viewManager.register(WebBrowserView.class, WebBrowserActivity.class, BrowseActivity.class);
     }
 
-    private void setupGlobalExceptionHandler() {
-        UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
 
-        if (defaultHandler == null) {
-            return;
-        }
-
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            if (Helpers.equalsAny(e.getMessage(),
-                    "parameter must be a descendant of this view",
-                    "Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()' on a null object reference")) {
-                Class<?> view = ViewManager.instance(getApplicationContext()).getTopView();
-                BrowseSection section = null;
-
-                if (view == BrowseView.class) {
-                    section = BrowsePresenter.instance(getApplicationContext()).getCurrentSection();
-                }
-
-                e = new RuntimeException("A crash in the view " + view.getSimpleName() + ", section id " + (section != null ? section.getId() : "-1"), e);
-            }
-
-            defaultHandler.uncaughtException(t, e);
-        });
-    }
 }
