@@ -23,8 +23,12 @@ public class VideoGroupObjectAdapter extends ObjectAdapter {
             // Duplicated items suddenly appeared in Home, Subscriptions and History.
 
             // Another alt method.
-            if (size() > 0 && size() < CHECK_MAX_SIZE) {
-                Helpers.removeIf(c, this::contains);
+            int size = size();
+            if (size > 0) {
+                if (size < CHECK_MAX_SIZE)
+                    Helpers.removeIf(c, this::contains);
+            } else {
+                Helpers.removeDuplicates(c);
             }
 
             return super.addAll(c);
@@ -119,7 +123,12 @@ public class VideoGroupObjectAdapter extends ObjectAdapter {
         int begin = mVideoItems.size();
 
         if (mVideoGroups.contains(group)) {
-            mVideoItems.addAll(group.getVideos().subList(begin, group.getVideos().size()));
+            int end = group.getVideos().size();
+            if (begin > end) {
+                mVideoItems.addAll(group.getVideos());
+            } else {
+                mVideoItems.addAll(group.getVideos().subList(begin, end));
+            }
         } else {
             mVideoItems.addAll(group.getVideos());
             mVideoGroups.add(group);
@@ -163,11 +172,16 @@ public class VideoGroupObjectAdapter extends ObjectAdapter {
         return -1;
     }
 
+    /**
+     * Clear takes some time. Do not call it immediately before the add or you'll get an exception!
+     * IndexOutOfBoundsException: Invalid item position... GridLayoutManager.getViewForPosition
+     */
     public void clear() {
         int itemCount = mVideoItems.size();
         mVideoItems.clear();
         mVideoGroups.clear();
         if (itemCount != 0) {
+            // NOTE: Crashes RecycleView IndexOutOfBoundsException when doing add immediately after clear
             notifyItemRangeRemoved(0, itemCount);
         }
     }

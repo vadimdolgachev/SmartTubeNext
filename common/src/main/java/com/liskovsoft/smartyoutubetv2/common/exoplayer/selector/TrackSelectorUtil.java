@@ -82,7 +82,7 @@ public class TrackSelectorUtil {
             return "";
         }
 
-        return isHdrCodec(format.codecs) ? "HDR" : "";
+        return isHdrFormat(format) ? "HDR" : "";
     }
 
     private static String buildFPSString(Format format) {
@@ -122,12 +122,37 @@ public class TrackSelectorUtil {
         return String.format("<font color=\"%s\">%s</font>", color, input);
     }
 
-    public static boolean isHdrCodec(String codec) {
+    public static boolean isHdrFormat(Format format) {
+        if (format == null) {
+            return false;
+        }
+
+        return isHdrFormat(format.id, format.codecs);
+    }
+
+    public static boolean isHdrFormat(String id, String codecs) {
+        return id != null ? isHdrFormat(id) : isHdrCodec(codecs);
+    }
+
+    private static boolean isHdrCodec(String codec) {
         if (codec == null) {
             return false;
         }
 
         return codec.equals(CODEC_PREFIX_VP9_HDR) || Helpers.endsWithAny(codec, CODEC_SUFFIX_AV1_HDR, CODEC_SUFFIX_AV1_HDR2, HDR_PROFILE_ENDING);
+    }
+
+    private static boolean isHdrFormat(String id) {
+        if (id == null) {
+            return false;
+        }
+
+        // webm hdr range: 330-337
+        // mp4 hdr range: 694-701
+
+        int parsed = Helpers.parseInt(id);
+
+        return (parsed >= 330 && parsed <= 337) || (parsed >= 694 && parsed <=701);
     }
 
     public static String extractCodec(Format format) {
@@ -297,6 +322,31 @@ public class TrackSelectorUtil {
         return originHeight;
     }
 
+    /**
+     * Get the height in terms like it's understandable by the codec.
+     */
+    public static int getRealHeight(Format format) {
+        if (format == null) {
+            return -1;
+        }
+
+        int height = format.height;
+        int width = format.width;
+
+        if (width == Format.NO_VALUE || height == Format.NO_VALUE) {
+            return -1;
+        }
+
+        // Make resolution calculation of the vertical videos more closer to the official app.
+        boolean isUltraWide = (float) width/height >= 2.1; // maybe 2.3???
+        int originHeight = isUltraWide ? getHeightByWidth(width) : getOriginHeight(Math.min(height, width));
+
+        // Ignore vertical videos completely. Only height matters.
+        //int originHeight = getOriginHeight(height);
+
+        return originHeight;
+    }
+
     private static String getResolutionPrefix(int originHeight) {
         String prefix = null;
 
@@ -312,23 +362,11 @@ public class TrackSelectorUtil {
     }
 
     private static Pair<String, String> getResolutionPrefixAndHeight(Format format) {
-        if (format == null) {
+        int originHeight = getRealHeight(format);
+
+        if (originHeight == -1) {
             return null;
         }
-
-        int height = format.height;
-        int width = format.width;
-
-        if (width == Format.NO_VALUE || height == Format.NO_VALUE) {
-            return null;
-        }
-
-        // Make resolution calculation of the vertical videos more closer to the official app.
-        boolean isUltraWide = (float) width/height >= 2.1; // maybe 2.3???
-        int originHeight = isUltraWide ? getHeightByWidth(width) : getOriginHeight(Math.min(height, width));
-
-        // Ignore vertical videos completely. Only height matters.
-        //int originHeight = getOriginHeight(height);
 
         String prefix = getResolutionPrefix(originHeight);
 

@@ -29,7 +29,7 @@ public class SubtitleSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendSingleSwitch(AppDialogUtil.createSubtitleChannelOption(getContext()));
         // Can't work properly. There is no robust language detection.
         //appendSubtitleLanguageCategory(settingsPresenter);
-        appendMoreSubtitlesSwitch(settingsPresenter);
+        //appendMoreSubtitlesSwitch(settingsPresenter);
         appendSubtitleStyleCategory(settingsPresenter);
         appendSubtitleSizeCategory(settingsPresenter);
         appendSubtitlePositionCategory(settingsPresenter);
@@ -82,10 +82,7 @@ public class SubtitleSettingsPresenter extends BasePresenter<Void> {
 
     private void appendMoreSubtitlesSwitch(AppDialogPresenter settingsPresenter) {
         settingsPresenter.appendSingleSwitch(UiOptionItem.from("Unlock more subtitles",
-                option -> {
-                    MediaServiceData.instance().unlockMoreSubtitles(option.isSelected());
-                    YouTubeMediaItemService.instance().invalidateCache(); // Remove current cached video
-                },
+                option -> MediaServiceData.instance().unlockMoreSubtitles(option.isSelected()),
                 MediaServiceData.instance().isMoreSubtitlesUnlocked()));
     }
 }

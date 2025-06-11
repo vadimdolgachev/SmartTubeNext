@@ -14,7 +14,9 @@ import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
 import androidx.leanback.widget.RowPresenter.ViewHolder;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
@@ -31,6 +33,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.UriBackgroundManager;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -147,6 +150,45 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         }
     }
 
+    private int findPositionById(int id) {
+        if (mRowsAdapter != null) {
+            VideoGroupObjectAdapter needed = mVideoGroupAdapters.get(id);
+            for (int i = 0; i < mRowsAdapter.size(); i++) {
+                Object row = mRowsAdapter.get(i);
+
+                if (row instanceof ListRow) {
+                    VideoGroupObjectAdapter adapter = (VideoGroupObjectAdapter) ((ListRow) row).getAdapter();
+                    if (adapter == needed) {
+                        return i;
+                    }
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    private boolean isComputingLayout(VideoGroup group) {
+        int action = group.getAction();
+
+        // Attempt to fix: IllegalStateException: Cannot call this method while RecyclerView is computing a layout or scrolling
+        if (action == VideoGroup.ACTION_SYNC && getVerticalGridView() != null) {
+            int position = findPositionById(group.getId());
+            if (position != -1) {
+                RecyclerView.ViewHolder viewHolder = getVerticalGridView().findViewHolderForAdapterPosition(position);
+                if (viewHolder != null) {
+                    Object nestedRecyclerView = Helpers.getField(viewHolder, "mNestedRecyclerView");
+                    if (nestedRecyclerView instanceof WeakReference) {
+                        Object recyclerView = ((WeakReference<?>) nestedRecyclerView).get();
+                        return recyclerView instanceof RecyclerView && ((RecyclerView) recyclerView).isComputingLayout();
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public boolean isEmpty() {
         if (mRowsAdapter == null) {
@@ -158,6 +200,26 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
     @Override
     public void update(VideoGroup group) {
+        if (isComputingLayout(group)) {
+            return;
+        }
+
+        int action = group.getAction();
+
+        // Smooth remove animation
+        if (action == VideoGroup.ACTION_REMOVE) {
+            updateInt(group);
+            return;
+        }
+
+        freeze(true);
+
+        updateInt(group);
+
+        freeze(false);
+    }
+
+    private void updateInt(VideoGroup group) {
         if (mVideoGroupAdapters == null) {
             mPendingUpdates.add(group);
             return;
@@ -206,7 +268,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
             ListRow row = new ListRow(rowHeader, mediaGroupAdapter);
 
-            if (group.getPosition() == -1) {
+            if (group.getPosition() == -1 || group.getPosition() > mRowsAdapter.size()) {
                 mRowsAdapter.add(row);
             } else {
                 mRowsAdapter.add(group.getPosition(), row);
@@ -214,11 +276,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         } else {
             Log.d(TAG, "Continue row %s %s", group.getTitle(), System.currentTimeMillis());
 
-            freeze(true);
-
             existingAdapter.add(group); // continue
-
-            freeze(false);
         }
 
         restorePosition();

@@ -24,8 +24,10 @@ import com.liskovsoft.sharedutils.locale.LocaleUpdater;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -111,9 +113,10 @@ public class MotherActivity extends FragmentActivity {
 
         try {
             return super.dispatchTouchEvent(event);
-        } catch (NullPointerException | SecurityException e) {
+        } catch (NullPointerException | SecurityException | IllegalStateException | ArrayIndexOutOfBoundsException e) {
             // Attempt to invoke interface method 'boolean android.app.trust.ITrustManager.isDeviceLocked(int)' on a null object reference
             // Permission Denial: starting Intent
+            // IllegalStateException: exitFreeformMode: You can only go fullscreen from freeform.
             e.printStackTrace();
             return false;
         }
@@ -408,4 +411,20 @@ public class MotherActivity extends FragmentActivity {
     //        super.setTheme(R.style.FitSystemWindows);
     //    }
     //}
+
+    protected ViewManager getViewManager() {
+        return ViewManager.instance(this);
+    }
+
+    protected GeneralData getGeneralData() {
+        return GeneralData.instance(this);
+    }
+
+    protected PlayerTweaksData getPlayerTweaksData() {
+        return PlayerTweaksData.instance(this);
+    }
+
+    protected PlayerData getPlayerData() {
+        return PlayerData.instance(this);
+    }
 }

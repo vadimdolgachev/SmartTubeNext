@@ -132,11 +132,13 @@ public class IntentExtractor {
         }
 
         if (channelId == null) {
-            // https://www.youtube.com/@IngaMezerya
+            // https://www.youtube.com/@IngaMezerya or https://youtu.be/builditbasement
             String lastPathSegment = url.getLastPathSegment();
 
+            // NOTE: can't distinguish a share video link (https://youtu.be/LpNVf8sczqU) from a non-prefix channel link (https://youtu.be/builditbasement)
+
             if (Helpers.startsWith(lastPathSegment, "@")) {
-                channelId = lastPathSegment; // already contains the prefix
+                channelId = lastPathSegment;
             }
         }
 
@@ -230,6 +232,14 @@ public class IntentExtractor {
         String time = parser.get(VIDEO_TIME_KEY);
 
         return parseTimeStr(time);
+    }
+
+    public static String extractAccountName(Intent intent) {
+        if (intent == null) {
+            return null;
+        }
+
+        return intent.getStringExtra("account_name");
     }
 
     /**

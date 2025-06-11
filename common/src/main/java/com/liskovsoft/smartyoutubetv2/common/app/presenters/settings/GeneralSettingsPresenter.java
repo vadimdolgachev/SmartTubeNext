@@ -9,7 +9,7 @@ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.okhttp.OkHttpManager;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
@@ -111,7 +111,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.side_panel_sections), options);
     }
 
-    private void appendHideUnwantedContent(AppDialogPresenter settingsPresenter) {
+    private void appendHideVideos(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
         MediaServiceData data = MediaServiceData.instance();
 
@@ -135,9 +135,9 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
                 option -> mGeneralData.hideWatchedFromNotifications(option.isSelected()),
                 mGeneralData.isHideWatchedFromNotificationsEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts),
-                option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS, option.isSelected()),
-                data.isContentHidden(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS)));
+        //options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts),
+        //        option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS, option.isSelected()),
+        //        data.isContentHidden(MediaServiceData.CONTENT_SHORTS_SUBSCRIPTIONS)));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.hide_shorts_from_search),
                 option -> data.hideContent(MediaServiceData.CONTENT_SHORTS_SEARCH, option.isSelected()),
@@ -286,7 +286,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
                 options.add(
                         UiOptionItem.from(
                                 item.getTitle(),
-                                optionItem -> mSidebarService.setBootSectionId(item.hashCode()),
+                                optionItem -> mSidebarService.setBootSectionId(item.getId()),
                                 item.hashCode() == mSidebarService.getBootSectionId()
                         )
                 );
@@ -497,6 +497,14 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
+        options.add(UiOptionItem.from( getContext().getString(R.string.player_exit_shortcut) + ": " + getContext().getString(R.string.app_double_back_exit),
+                option -> mGeneralData.setPlayerExitShortcut(option.isSelected() ? GeneralData.EXIT_DOUBLE_BACK : GeneralData.EXIT_SINGLE_BACK),
+                mGeneralData.getPlayerExitShortcut() == GeneralData.EXIT_DOUBLE_BACK));
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.search_exit_shortcut) + ": " + getContext().getString(R.string.app_double_back_exit),
+                option -> mGeneralData.setSearchExitShortcut(option.isSelected() ? GeneralData.EXIT_DOUBLE_BACK : GeneralData.EXIT_SINGLE_BACK),
+                mGeneralData.getSearchExitShortcut() == GeneralData.EXIT_DOUBLE_BACK));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.return_to_launcher),
                 option -> mGeneralData.enableReturnToLauncher(option.isSelected()),
                 mGeneralData.isReturnToLauncherEnabled()));
@@ -668,7 +676,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
             mMainUIData.enableTopButton(topButtons);
             tweaksData.enablePlayerButton(playerButtons);
             mMainUIData.enableMenuItem(menuItems);
-            mPlayerData.setRepeatMode(PlayerEngineConstants.REPEAT_MODE_LIST);
+            mPlayerData.setPlaybackMode(PlayerConstants.PLAYBACK_MODE_LIST);
             BrowsePresenter.instance(getContext()).enableSection(MediaGroup.TYPE_HISTORY, true);
             BrowsePresenter.instance(getContext()).enableSection(MediaGroup.TYPE_USER_PLAYLISTS, true);
             BrowsePresenter.instance(getContext()).enableSection(MediaGroup.TYPE_SUBSCRIPTIONS, true);
@@ -680,7 +688,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
             mMainUIData.enableMenuItem(MainUIData.MENU_ITEM_DEFAULT);
             BrowsePresenter.instance(getContext()).enableAllSections(true);
             tweaksData.disableSuggestions(false);
-            mPlayerData.setRepeatMode(PlayerEngineConstants.REPEAT_MODE_ALL);
+            mPlayerData.setPlaybackMode(PlayerConstants.PLAYBACK_MODE_ALL);
             searchData.disablePopularSearches(false);
         }
     }
@@ -753,6 +761,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         menuNames.put(MainUIData.MENU_ITEM_PLAY_VIDEO, R.string.play_video);
         menuNames.put(MainUIData.MENU_ITEM_PLAY_VIDEO_INCOGNITO, R.string.play_video_incognito);
         menuNames.put(MainUIData.MENU_ITEM_NOT_INTERESTED, R.string.not_interested);
+        menuNames.put(MainUIData.MENU_ITEM_NOT_RECOMMEND_CHANNEL, R.string.not_recommend_channel);
         menuNames.put(MainUIData.MENU_ITEM_REMOVE_FROM_HISTORY, R.string.remove_from_history);
         menuNames.put(MainUIData.MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS, R.string.remove_from_subscriptions);
         menuNames.put(MainUIData.MENU_ITEM_PIN_TO_SIDEBAR, R.string.pin_unpin_from_sidebar);

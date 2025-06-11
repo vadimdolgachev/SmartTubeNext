@@ -140,6 +140,7 @@
     <string name="open_channel_uploads">Открыть загрузки</string>
     <string name="app_exit_shortcut">Выход из приложения</string>
     <string name="player_exit_shortcut">Выход из плеера</string>
+    <string name="search_exit_shortcut">Выход из поиска</string>
     <string name="app_exit_none">Не выходить</string>
     <string name="app_double_back_exit">Двойное назад</string>
     <string name="app_single_back_exit">Одинарное назад</string>
@@ -530,6 +531,7 @@
     <string name="loading">Загрузка…</string>
     <string name="hide_streams">Скрывать прямые трансляции из Подписок</string>
     <string name="video_rotate">Вращать</string>
+    <string name="video_flip">Отразить</string>
     <string name="trending_searches">Популярные запросы</string>
     <string name="video_duration_any">Любая</string>
     <string name="video_duration">Длительность</string>
@@ -629,7 +631,7 @@
     <string name="play_next">Воспроизвести следующим</string>
     <string name="hide_watched_from_subscriptions">Скрывать просмотренные видео из Подписок</string>
     <string name="hide_watched_from_notifications">Скрывать просмотренные видео из Уведомлений</string>
-    <string name="hide_unwanted_content">Скрывать нежелательное содержимое</string>
+    <string name="hide_unwanted_content">Скрывать видео</string>
     <string name="hide_watched_from_home">Скрывать просмотренные видео из Домашнего раздела</string>
     <string name="hide_watched_from_watch_later">Скрывать просмотренные видео из плейлиста Смотреть позже</string>
     <string name="remote_control_permission">Фоновое Дистанционное управление требует разрешения Перекрывать другие окна</string>
@@ -685,5 +687,10 @@
     <string name="my_videos">Ваши видео</string>
     <string name="player_audio_focus">Аудиофокус (пауза, если обнаружены другие плееры)</string>
     <string name="paid_content_notification">Уведомление о платном содержимом</string>
+    <string name="you_liked">вам понравилось</string>
+    <string name="card_preview_muted">Видео без звука</string>
+    <string name="card_preview_full">Видео со звуком</string>
+    <string name="card_preview">Предпросмотр карточки</string>
+    <string name="card_unlocalized_titles">Не переводить названия видео</string>
     <string name="cancel">Отмена</string>
 </resources>

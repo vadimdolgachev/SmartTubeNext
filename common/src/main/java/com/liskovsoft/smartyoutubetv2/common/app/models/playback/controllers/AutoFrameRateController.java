@@ -27,8 +27,9 @@ import java.util.List;
 
 public class AutoFrameRateController extends BasePlayerController implements AutoFrameRateListener {
     private static final String TAG = AutoFrameRateController.class.getSimpleName();
+    private static final long AUTO_FRAME_RATE_DELAY_MS = 500;
     private static final int AUTO_FRAME_RATE_ID = 21;
-    private static final int AUTO_FRAME_RATE_DELAY_ID = 22;
+    private static final int AUTO_FRAME_RATE_VIDEO_PAUSE_ID = 22;
     private static final int AUTO_FRAME_RATE_MODES_ID = 23;
     private static final long SHORTS_DURATION_MIN_MS = 30 * 1_000;
     private static final long SHORTS_DURATION_MAX_MS = 61 * 1_000;
@@ -36,7 +37,6 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
     private final ModeSyncManager mModeSyncManager;
     private final Runnable mApplyAfr = this::applyAfr;
     private final Runnable mApplyAfrStop = this::applyAfrStop;
-    private PlayerData mPlayerData;
     private boolean mIsPlay;
     private VideoStateController mStateController;
     private HQDialogController mHQDialogController;
@@ -55,7 +55,6 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
 
     @Override
     public void onInit() {
-        mPlayerData = PlayerData.instance(getContext());
         mAutoFrameRateHelper.saveOriginalState(getActivity());
         mStateController = getController(VideoStateController.class);
         mHQDialogController = getController(HQDialogController.class);
@@ -63,10 +62,10 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
 
     @Override
     public void onViewResumed() {
-        mAutoFrameRateHelper.setFpsCorrectionEnabled(mPlayerData.isAfrFpsCorrectionEnabled());
-        mAutoFrameRateHelper.setResolutionSwitchEnabled(mPlayerData.isAfrResSwitchEnabled(), false);
-        mAutoFrameRateHelper.setDoubleRefreshRateEnabled(mPlayerData.isDoubleRefreshRateEnabled());
-        mAutoFrameRateHelper.setSkip24RateEnabled(mPlayerData.isSkip24RateEnabled());
+        mAutoFrameRateHelper.setFpsCorrectionEnabled(getPlayerData().isAfrFpsCorrectionEnabled());
+        mAutoFrameRateHelper.setResolutionSwitchEnabled(getPlayerData().isAfrResSwitchEnabled(), false);
+        mAutoFrameRateHelper.setDoubleRefreshRateEnabled(getPlayerData().isDoubleRefreshRateEnabled());
+        mAutoFrameRateHelper.setSkip24RateEnabled(getPlayerData().isSkip24RateEnabled());
 
         addUiOptions();
     }
@@ -82,7 +81,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
 
     @Override
     public void onModeStart(Mode newMode) {
-        if (getContext() == null) {
+        if (getContext() == null || getPlayerData() == null) {
             return;
         }
 
@@ -96,7 +95,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
         Log.d(TAG, message);
         //MessageHelpers.showLongMessage(getActivity(), message);
         maybePausePlayback();
-        mPlayerData.setAfrSwitchTimeMs(System.currentTimeMillis());
+        getPlayerData().setAfrSwitchTimeMs(System.currentTimeMillis());
     }
 
     @Override
@@ -121,7 +120,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
 
     @Override
     public void onEngineReleased() {
-        if (mPlayerData.isAfrEnabled()) {
+        if (getPlayerData().isAfrEnabled()) {
             applyAfrStopDelayed();
         }
     }
@@ -136,23 +135,23 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
     }
 
     private void onFpsCorrectionClick() {
-        mAutoFrameRateHelper.setFpsCorrectionEnabled(mPlayerData.isAfrFpsCorrectionEnabled());
+        mAutoFrameRateHelper.setFpsCorrectionEnabled(getPlayerData().isAfrFpsCorrectionEnabled());
     }
 
     private void onResolutionSwitchClick() {
-        mAutoFrameRateHelper.setResolutionSwitchEnabled(mPlayerData.isAfrResSwitchEnabled(), mPlayerData.isAfrEnabled());
+        mAutoFrameRateHelper.setResolutionSwitchEnabled(getPlayerData().isAfrResSwitchEnabled(), getPlayerData().isAfrEnabled());
     }
 
     private void onDoubleRefreshRateClick() {
-        mAutoFrameRateHelper.setDoubleRefreshRateEnabled(mPlayerData.isDoubleRefreshRateEnabled());
+        mAutoFrameRateHelper.setDoubleRefreshRateEnabled(getPlayerData().isDoubleRefreshRateEnabled());
     }
 
     public void onSkip24RateClick() {
-        mAutoFrameRateHelper.setSkip24RateEnabled(mPlayerData.isSkip24RateEnabled());
+        mAutoFrameRateHelper.setSkip24RateEnabled(getPlayerData().isSkip24RateEnabled());
     }
 
     private void applyAfrWrapper() {
-        if (mPlayerData.isAfrEnabled()) {
+        if (getPlayerData().isAfrEnabled()) {
             AppDialogPresenter.instance(getContext()).showDialogMessage("Applying AFR...", this::applyAfr, 1_000);
         }
     }
@@ -161,11 +160,11 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
      * Sometimes AFR is not working on activity startup. Trying to fix with delay.
      */
     private void applyAfrDelayed() {
-        Utils.postDelayed(mApplyAfr, 500);
+        Utils.postDelayed(mApplyAfr, AUTO_FRAME_RATE_DELAY_MS);
     }
 
     public void applyAfr() {
-        if (!skipAfr() && mPlayerData.isAfrEnabled()) {
+        if (!skipAfr() && getPlayerData().isAfrEnabled()) {
             FormatItem videoFormat = getPlayer().getVideoFormat();
             applyAfr(videoFormat, false);
             // Send data to AFR daemon via tvQuickActions app
@@ -203,16 +202,16 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
 
         int delayMs = 5_000;
 
-        if (mPlayerData.getAfrPauseMs() > 0) {
+        if (getPlayerData().getAfrPauseMs() > 0) {
             getPlayer().setPlayWhenReady(false);
-            delayMs = mPlayerData.getAfrPauseMs();
+            delayMs = getPlayerData().getAfrPauseMs();
         }
 
         Utils.postDelayed(mPlaybackResumeHandler, delayMs);
     }
 
     private void savePlayback() {
-        if (!skipAfr() && mAutoFrameRateHelper.isSupported() && mPlayerData.isAfrEnabled() && mPlayerData.getAfrPauseMs() > 0) {
+        if (!skipAfr() && mAutoFrameRateHelper.isSupported() && getPlayerData().isAfrEnabled() && getPlayerData().getAfrPauseMs() > 0) {
             mStateController.blockPlay(true);
         }
 
@@ -221,7 +220,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
 
     private void restorePlayback() {
         // Fix restore after disable afr: don't do afr enabled check
-        if (!skipAfr() && mAutoFrameRateHelper.isSupported() && mPlayerData.getAfrPauseMs() > 0) {
+        if (!skipAfr() && mAutoFrameRateHelper.isSupported() && getPlayerData().getAfrPauseMs() > 0) {
             mStateController.blockPlay(false);
             getPlayer().setPlayWhenReady(mIsPlay);
         }
@@ -338,7 +337,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
                     pauseMs == playerData.getAfrPauseMs()));
         }
 
-        return OptionCategory.from(AUTO_FRAME_RATE_DELAY_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
+        return OptionCategory.from(AUTO_FRAME_RATE_VIDEO_PAUSE_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
     }
 
     public static OptionCategory createAutoFrameRateModesCategory(Context context) {
@@ -359,13 +358,15 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
     }
 
     private boolean skipAfr() {
-        if (mPlayerData == null || getPlayer() == null || getPlayer().getVideo() == null) {
+        if (getPlayerData() == null || getPlayer() == null || getPlayer().getVideo() == null) {
             return true;
         }
 
-        boolean skipShortsPrefs = mPlayerData.isSkipShortsEnabled() && (getPlayer().getVideo().isShorts || getPlayer().getDurationMs() <= SHORTS_DURATION_MAX_MS);
-
         // NOTE: Avoid detecting shorts by Video.isShorts. Because this is working only in certain places (e.g. Shorts section).
-        return getPlayer().getDurationMs() <= SHORTS_DURATION_MIN_MS || skipShortsPrefs;
+        return isEmbedPlayer() || getPlayer().getDurationMs() <= SHORTS_DURATION_MIN_MS || isSkipShortsPrefs();
+    }
+
+    private boolean isSkipShortsPrefs() {
+        return getPlayerData().isSkipShortsEnabled() && (getPlayer().getVideo().isShorts || getPlayer().getDurationMs() <= SHORTS_DURATION_MAX_MS);
     }
 }
