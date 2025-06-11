@@ -71,4 +71,6 @@ public class MainApplication extends MultiDexApplication { // fix: Didn't find c
         viewManager.register(ChannelUploadsView.class, ChannelUploadsActivity.class, BrowseActivity.class);
         viewManager.register(WebBrowserView.class, WebBrowserActivity.class, BrowseActivity.class);
     }
+
+
 }

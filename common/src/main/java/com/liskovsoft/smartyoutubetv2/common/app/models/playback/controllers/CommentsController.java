@@ -3,7 +3,6 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 import android.content.Context;
 import android.util.Pair;
 
-import com.liskovsoft.mediaserviceinterfaces.CommentsService;
 import com.liskovsoft.mediaserviceinterfaces.data.CommentGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.CommentItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
@@ -18,12 +17,10 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CommentsRece
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.AbstractCommentsReceiver;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
-import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.disposables.Disposable;
 
 public class CommentsController extends BasePlayerController {
     private static final String TAG = CommentsController.class.getSimpleName();
-    private CommentsService mCommentsService;
     private Disposable mCommentsAction;
     private String mLiveChatKey;
     private String mCommentsKey;
@@ -37,11 +34,6 @@ public class CommentsController extends BasePlayerController {
         setAltContext(context);
         onInit();
         onMetadata(metadata);
-    }
-
-    @Override
-    public void onInit() {
-        mCommentsService = YouTubeServiceManager.instance().getCommentsService();
     }
 
     @Override
@@ -87,7 +79,7 @@ public class CommentsController extends BasePlayerController {
 
             @Override
             public void onCommentClicked(CommentItem commentItem) {
-                if (commentItem.getNestedCommentsKey() == null) {
+                if (commentItem.isEmpty()) {
                     return;
                 }
 
@@ -101,9 +93,19 @@ public class CommentsController extends BasePlayerController {
                     public void onStart() {
                         loadComments(this, commentItem.getNestedCommentsKey());
                     }
+
+                    @Override
+                    public void onCommentLongClicked(CommentItem commentItem) {
+                        toggleLike(this, commentItem);
+                    }
                 };
 
                 showDialog(nestedReceiver, title);
+            }
+
+            @Override
+            public void onCommentLongClicked(CommentItem commentItem) {
+                toggleLike(this, commentItem);
             }
 
             @Override
@@ -148,7 +150,7 @@ public class CommentsController extends BasePlayerController {
     private void loadComments(CommentsReceiver receiver, String commentsKey) {
         disposeActions();
 
-        mCommentsAction = mCommentsService.getCommentsObserve(commentsKey)
+        mCommentsAction = getCommentsService().getCommentsObserve(commentsKey)
                 .subscribe(
                         receiver::addCommentGroup,
                         error -> {
@@ -159,10 +161,122 @@ public class CommentsController extends BasePlayerController {
     }
 
     private void showDialog(CommentsReceiver receiver, String title) {
-        AppDialogPresenter appDialogPresenter = AppDialogPresenter.instance(getContext());
+        AppDialogPresenter appDialogPresenter = getAppDialogPresenter();
 
         appDialogPresenter.appendCommentsCategory(title, UiOptionItem.from(title, receiver));
         //appDialogPresenter.enableTransparent(true);
         appDialogPresenter.showDialog();
+    }
+
+    private void toggleLike(CommentsReceiver receiver, CommentItem commentItem) {
+        MyCommentItem myCommentItem = MyCommentItem.from(commentItem);
+        myCommentItem.setLiked(!myCommentItem.isLiked());
+
+        receiver.sync(myCommentItem);
+
+        RxHelper.execute(
+                getCommentsService().toggleLikeObserve(commentItem.getNestedCommentsKey()), e -> MessageHelpers.showMessage(getContext(), e.getMessage()));
+    }
+
+    private static final class MyCommentItem implements CommentItem {
+        private final String mId;
+        private final String mMessage;
+        private final String mAuthorName;
+        private final String mAuthorPhoto;
+        private final String mPublishedDate;
+        private final String mNestedCommentsKey;
+        private boolean mIsLiked;
+        private String mLikeCount;
+        private final String mReplyCount;
+        private final boolean mIsEmpty;
+
+        private MyCommentItem(
+                String id, String message, String authorName, String authorPhoto, String publishedDate,
+                String nestedCommentsKey, boolean isLiked, String likeCount, String replyCount, boolean isEmpty) {
+            mId = id;
+            mMessage = message;
+            mAuthorName = authorName;
+            mAuthorPhoto = authorPhoto;
+            mPublishedDate = publishedDate;
+            mNestedCommentsKey = nestedCommentsKey;
+            mIsLiked = isLiked;
+            mLikeCount = likeCount;
+            mReplyCount = replyCount;
+            mIsEmpty = isEmpty;
+        }
+
+        @Override
+        public String getId() {
+            return mId;
+        }
+
+        @Override
+        public String getMessage() {
+            return mMessage;
+        }
+
+        @Override
+        public String getAuthorName() {
+            return mAuthorName;
+        }
+
+        @Override
+        public String getAuthorPhoto() {
+            return mAuthorPhoto;
+        }
+
+        @Override
+        public String getPublishedDate() {
+            return mPublishedDate;
+        }
+
+        @Override
+        public String getNestedCommentsKey() {
+            return mNestedCommentsKey;
+        }
+
+        @Override
+        public boolean isLiked() {
+            return mIsLiked;
+        }
+
+        public void setLiked(boolean isLiked) {
+            if (mIsLiked == isLiked) {
+                return;
+            }
+
+            mIsLiked = isLiked;
+
+            if (mLikeCount == null) {
+                mLikeCount = String.valueOf(0);
+            }
+
+            if (Helpers.isInteger(getLikeCount())) {
+                int likeCount = Helpers.parseInt(getLikeCount());
+                int count = isLiked ? ++likeCount : --likeCount;
+                mLikeCount = count > 0 ? String.valueOf(count) : null;
+            }
+        }
+
+        @Override
+        public String getLikeCount() {
+            return mLikeCount;
+        }
+
+        @Override
+        public String getReplyCount() {
+            return mReplyCount;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return mIsEmpty;
+        }
+
+        public static MyCommentItem from(CommentItem commentItem) {
+            return new MyCommentItem(commentItem.getId(), commentItem.getMessage(), commentItem.getAuthorName(),
+                    commentItem.getAuthorPhoto(), commentItem.getPublishedDate(), commentItem.getNestedCommentsKey(),
+                    commentItem.isLiked(), commentItem.getLikeCount(), commentItem.getReplyCount(), commentItem.isEmpty());
+        }
     }
 }

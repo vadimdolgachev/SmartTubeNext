@@ -47,7 +47,7 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
 
     @Override
     public void onAccountChanged(Account account) {
-        selectAccount(account);
+        selectProfile(account);
         onProfileChanged();
     }
 
@@ -159,14 +159,8 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
         return getString(LAST_PROFILE_NAME, null);
     }
 
-    private void selectAccount(Account account) {
-        selectProfile(account != null && account.getName() != null ? account.getName().replace(" ", "_") : null);
-    }
-
-    private void selectProfile(String profileName) {
-        if (profileName == null) {
-            profileName = ANONYMOUS_PROFILE_NAME;
-        }
+    private void selectProfile(Account account) {
+        String profileName = account != null && account.getName() != null ? account.getName().replace(" ", "_") : ANONYMOUS_PROFILE_NAME;
 
         setProfileName(profileName);
     }

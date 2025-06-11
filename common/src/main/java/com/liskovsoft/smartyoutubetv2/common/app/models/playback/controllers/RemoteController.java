@@ -15,16 +15,15 @@ import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerController;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase.OnDataChange;
-import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.disposables.Disposable;
+import java.util.List;
+import java.util.Locale;
 
 public class RemoteController extends BasePlayerController implements OnDataChange {
     private static final String TAG = RemoteController.class.getSimpleName();
@@ -36,7 +35,6 @@ public class RemoteController extends BasePlayerController implements OnDataChan
     private Disposable mPostStartPlayAction;
     private Disposable mPostStateAction;
     private Disposable mPostVolumeAction;
-    private Video mVideo;
     private boolean mConnected;
     private long mNewVideoPositionMs;
     private Disposable mActionDown;
@@ -78,15 +76,18 @@ public class RemoteController extends BasePlayerController implements OnDataChan
 
     @Override
     public void onVideoLoaded(Video item) {
+        if (getPlayer() == null) {
+            return;
+        }
+
         if (mNewVideoPositionMs > 0) {
             getPlayer().setPositionMs(mNewVideoPositionMs);
             mNewVideoPositionMs = 0;
         }
 
         postStartPlaying(item, getPlayer().getPlayWhenReady());
-        mVideo = item;
         if (mConnected) {
-            mRemoteControlData.setLastVideo(mVideo);
+            mRemoteControlData.setLastVideo(item);
         }
     }
 
@@ -102,14 +103,14 @@ public class RemoteController extends BasePlayerController implements OnDataChan
 
     @Override
     public void onPlayEnd() {
-        switch (PlayerData.instance(getContext()).getRepeatMode()) {
-            case PlayerEngineConstants.REPEAT_MODE_CLOSE:
-            case PlayerEngineConstants.REPEAT_MODE_PAUSE:
-            case PlayerEngineConstants.REPEAT_MODE_ALL:
+        switch (getPlayerData().getPlaybackMode()) {
+            case PlayerConstants.PLAYBACK_MODE_CLOSE:
+            case PlayerConstants.PLAYBACK_MODE_PAUSE:
+            case PlayerConstants.PLAYBACK_MODE_ALL:
                 postPlay(false);
                 break;
-            case PlayerEngineConstants.REPEAT_MODE_ONE:
-                postStartPlaying(getPlayer().getVideo(), true);
+            case PlayerConstants.PLAYBACK_MODE_ONE:
+                postStartPlaying(getVideo(), true);
                 break;
         }
     }
@@ -125,11 +126,10 @@ public class RemoteController extends BasePlayerController implements OnDataChan
     public void onFinish() {
         // User action detected. Hide remote playlist.
         mConnected = false;
-        mVideo = null;
     }
 
     private void postStartPlaying(@Nullable Video item, boolean isPlaying) {
-        if (!mRemoteControlData.isDeviceLinkEnabled() || !isConnectedBefore()) {
+        if (isRemoteDisabled()) {
             return;
         }
 
@@ -147,7 +147,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
     }
 
     private void postStartPlaying(String videoId, long positionMs, long durationMs, boolean isPlaying) {
-        if (!mRemoteControlData.isDeviceLinkEnabled() || !isConnectedBefore()) {
+        if (isRemoteDisabled()) {
             return;
         }
 
@@ -159,7 +159,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
     }
 
     private void postState(long positionMs, long durationMs, boolean isPlaying) {
-        if (!mRemoteControlData.isDeviceLinkEnabled() || !isConnectedBefore()) {
+        if (isRemoteDisabled()) {
             return;
         }
 
@@ -171,7 +171,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
     }
 
     private void postVolumeChange(int volume) {
-        if (!mRemoteControlData.isDeviceLinkEnabled() || !isConnectedBefore()) {
+        if (isRemoteDisabled()) {
             return;
         }
 
@@ -260,7 +260,6 @@ public class RemoteController extends BasePlayerController implements OnDataChan
 
         switch (command.getType()) {
             case Command.TYPE_OPEN_VIDEO:
-            case Command.TYPE_SUBTITLES: // open same video fix
                 if (getPlayer() != null) {
                     getPlayer().showOverlay(false);
                 }
@@ -272,9 +271,46 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                 mNewVideoPositionMs = command.getCurrentTimeMs();
                 openNewVideo(newVideo);
                 break;
+            case Command.TYPE_SUBTITLES:
+                if (getPlayer() != null) {
+                    getPlayer().showOverlay(false);
+                }
+                movePlayerToForeground();
+                Video newVideo2 = Video.from(command.getVideoId());
+                newVideo2.remotePlaylistId = command.getPlaylistId();
+                newVideo2.playlistIndex = command.getPlaylistIndex();
+                newVideo2.isRemote = true;
+                mNewVideoPositionMs = command.getCurrentTimeMs();
+
+                String langCode = command.getSubLanguageCode();
+                if (langCode != null && !langCode.trim().isEmpty() && getPlayer() != null) {
+                    List<FormatItem> subs = getPlayer().getSubtitleFormats();
+                    if (subs != null) {
+                        FormatItem selected = null;
+                        for (FormatItem item : subs) {
+                            Locale languageLocale = new Locale(langCode);
+                            String currentLocale = languageLocale.getDisplayLanguage().toLowerCase();
+                            if (item.getLanguage() != null && item.getLanguage().toLowerCase().contains(currentLocale)) {
+                                selected = item;
+                                break;
+                            }
+                        }
+
+                        if (selected != null) {
+                            getPlayer().setFormat(selected);
+                        }
+                    }
+                    getPlayer().showSubtitles(true);
+                    getPlayer().setSubtitleButtonState(true);
+                 } else if (getPlayer() != null) {
+                    getPlayer().showSubtitles(false);
+                    getPlayer().setSubtitleButtonState(false);
+                 }
+                 openNewVideo(newVideo2);
+                 break;
             case Command.TYPE_UPDATE_PLAYLIST:
                 if (getPlayer() != null && mConnected) {
-                    Video video = getPlayer().getVideo();
+                    Video video = getVideo();
                     // Ensure that remote playlist already playing
                     if (video != null && video.remotePlaylistId != null) {
                         video.remotePlaylistId = command.getPlaylistId();
@@ -291,7 +327,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                     getPlayer().setPositionMs(command.getCurrentTimeMs());
                     postSeek(command.getCurrentTimeMs());
                 } else {
-                    openNewVideo(mVideo);
+                    openNewVideo(getVideo());
                 }
                 break;
             case Command.TYPE_PLAY:
@@ -302,7 +338,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                     postPlay(true);
                 } else {
                     // Already connected
-                    openNewVideo(mVideo != null ? mVideo : mRemoteControlData.getLastVideo());
+                    openNewVideo(getVideo() != null ? getVideo() : mRemoteControlData.getLastVideo());
                 }
                 break;
             case Command.TYPE_PAUSE:
@@ -313,7 +349,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                     postPlay(false);
                 } else {
                     // Already connected
-                    openNewVideo(mVideo != null ? mVideo : mRemoteControlData.getLastVideo());
+                    openNewVideo(getVideo() != null ? getVideo() : mRemoteControlData.getLastVideo());
                 }
                 break;
             case Command.TYPE_NEXT:
@@ -321,7 +357,7 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                     movePlayerToForeground();
                     getController(VideoLoaderController.class).loadNext();
                 } else {
-                    openNewVideo(mVideo);
+                    openNewVideo(getVideo());
                 }
                 break;
             case Command.TYPE_PREVIOUS:
@@ -330,13 +366,13 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                     // Switch immediately. Skip position reset logic.
                     getController(VideoLoaderController.class).loadPrevious();
                 } else {
-                    openNewVideo(mVideo);
+                    openNewVideo(getVideo());
                 }
                 break;
             case Command.TYPE_GET_STATE:
                 if (getPlayer() != null) {
-                    ViewManager.instance(getContext()).moveAppToForeground();
-                    postStartPlaying(getPlayer().getVideo(), getPlayer().isPlaying());
+                    getViewManager().moveAppToForeground();
+                    postStartPlaying(getVideo(), getPlayer().isPlaying());
                 } else {
                     postStartPlaying(null, false);
                 }
@@ -442,35 +478,35 @@ public class RemoteController extends BasePlayerController implements OnDataChan
                 break;
             case Command.TYPE_VOICE:
                 if (command.isVoiceStarted()) {
-                    SearchPresenter.instance(getContext()).startVoice();
+                    getSearchPresenter().startVoice();
                 } else {
-                    SearchPresenter.instance(getContext()).forceFinish();
+                    getSearchPresenter().forceFinish();
                 }
                 break;
         }
     }
 
     private void openNewVideo(Video newVideo) {
-        if (Video.equals(mVideo, newVideo) && ViewManager.instance(getContext()).isPlayerInForeground()) { // same video already playing
-            //mVideo.playlistId = newVideo.playlistId;
-            //mVideo.playlistIndex = newVideo.playlistIndex;
-            //mVideo.playlistParams = newVideo.playlistParams;
+        if (Video.equals(getVideo(), newVideo) && getViewManager().isPlayerInForeground()) { // same video already playing
+            //getVideo().playlistId = newVideo.playlistId;
+            //getVideo().playlistIndex = newVideo.playlistIndex;
+            //getVideo().playlistParams = newVideo.playlistParams;
             if (mNewVideoPositionMs > 0) {
                 getPlayer().setPositionMs(mNewVideoPositionMs);
                 mNewVideoPositionMs = 0;
             }
-            postStartPlaying(mVideo, getPlayer().isPlaying());
+            postStartPlaying(getVideo(), getPlayer().isPlaying());
         } else if (newVideo != null) {
             newVideo.isRemote = true;
-            PlaybackPresenter.instance(getContext()).openVideo(newVideo);
+            getPlaybackPresenter().openVideo(newVideo);
         }
     }
 
     private void movePlayerToForeground() {
-        ViewManager.instance(getContext()).movePlayerToForeground();
+        getViewManager().movePlayerToForeground();
         // Device wake fix when player isn't started yet or been closed
         if (getPlayer() == null || !Utils.checkActivity(getActivity())) {
-            new Handler(Looper.myLooper()).postDelayed(() -> ViewManager.instance(getContext()).movePlayerToForeground(), 5_000);
+            new Handler(Looper.myLooper()).postDelayed(() -> getViewManager().movePlayerToForeground(), 5_000);
         }
     }
 
@@ -501,5 +537,9 @@ public class RemoteController extends BasePlayerController implements OnDataChan
 
     private boolean isConnectedBefore() {
         return mConnected || mRemoteControlData.isConnectedBefore();
+    }
+
+    private boolean isRemoteDisabled() {
+        return !mRemoteControlData.isDeviceLinkEnabled() || !isConnectedBefore() || isEmbedPlayer();
     }
 }

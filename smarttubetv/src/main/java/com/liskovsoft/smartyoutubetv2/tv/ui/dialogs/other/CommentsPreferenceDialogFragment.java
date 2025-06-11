@@ -11,6 +11,7 @@ import androidx.preference.DialogPreference;
 import com.bumptech.glide.Glide;
 import com.liskovsoft.mediaserviceinterfaces.data.CommentGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.CommentItem;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CommentsReceiver;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CommentsReceiver.Backup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.CommentsReceiver.Callback;
@@ -93,6 +94,7 @@ public class CommentsPreferenceDialogFragment extends LeanbackPreferenceDialogFr
                     .into(imageView));
         adapter.setLoadMoreListener((page, totalItemsCount) -> mCommentsReceiver.onLoadMore(mCurrentGroup));
         adapter.setOnMessageViewClickListener((v, message) -> mCommentsReceiver.onCommentClicked(message.getCommentItem()));
+        adapter.setOnMessageViewLongClickListener((v, message) -> mCommentsReceiver.onCommentLongClicked(message.getCommentItem()));
         adapter.setOnMessageViewFocusListener((view1, message) -> mFocusedMessage = message);
         messagesList.setAdapter(adapter);
         messagesList.requestFocus(); // hold focus even when there's no messages
@@ -109,12 +111,12 @@ public class CommentsPreferenceDialogFragment extends LeanbackPreferenceDialogFr
 
                 for (CommentItem commentItem : commentGroup.getComments()) {
                     if (ChatItemMessage.shouldSplit(commentItem)) {
-                        List<ChatItemMessage> split = ChatItemMessage.fromSplit(commentItem);
+                        List<ChatItemMessage> split = ChatItemMessage.fromSplit(view.getContext(), commentItem);
                         for (ChatItemMessage splitItem : split) {
                             appendMessage(adapter, splitItem);
                         }
                     } else {
-                        appendMessage(adapter, ChatItemMessage.from(commentItem));
+                        appendMessage(adapter, ChatItemMessage.from(view.getContext(), commentItem));
                     }
                 }
                 if (adapter.getMessagesCount() == 0) { // No comments under the video
@@ -144,6 +146,11 @@ public class CommentsPreferenceDialogFragment extends LeanbackPreferenceDialogFr
                 }
                 adapter.scrollToPosition(adapter.getMessagePosition(mFocusedMessage));
             }
+
+            @Override
+            public void onSync(CommentItem commentItem) {
+                syncMessage(adapter, ChatItemMessage.from(view.getContext(), commentItem));
+            }
         });
 
         if (mBackupMessages == null) {
@@ -171,6 +178,15 @@ public class CommentsPreferenceDialogFragment extends LeanbackPreferenceDialogFr
         adapter.addToStart(message, false);
 
         if (mFocusedMessage == null && IMessage.checkMessage(message)) {
+            mFocusedMessage = message;
+            adapter.setFocusedMessage(message);
+        }
+    }
+
+    private void syncMessage(MessagesListAdapter<ChatItemMessage> adapter, ChatItemMessage message) {
+        adapter.update(message);
+
+        if ((mFocusedMessage == null || Helpers.equals(mFocusedMessage.getId(), message.getId())) && IMessage.checkMessage(message)) {
             mFocusedMessage = message;
             adapter.setFocusedMessage(message);
         }
