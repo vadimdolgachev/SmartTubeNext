@@ -2,8 +2,6 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import com.liskovsoft.mediaserviceinterfaces.ContentService;
-import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.sharedutils.helpers.Helpers;
@@ -19,12 +17,9 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionP
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.VideoGroupPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
-import com.liskovsoft.smartyoutubetv2.common.misc.DeArrowProcessor;
-import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
+import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager;
-import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
@@ -35,9 +30,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     private static final String TAG = ChannelPresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static ChannelPresenter sInstance;
-    private final ServiceManager mService;
-    private final MediaServiceManager mServiceManager;
-    private final DeArrowProcessor mDeArrowProcessor;
+    private final BrowseProcessorManager mBrowseProcessor;
     private String mChannelId;
     private final List<List<MediaGroup>> mPendingGroups = new ArrayList<>();
     private Disposable mUpdateAction;
@@ -55,9 +48,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
 
     public ChannelPresenter(Context context) {
         super(context);
-        mService = YouTubeServiceManager.instance();
-        mServiceManager = MediaServiceManager.instance();
-        mDeArrowProcessor = new DeArrowProcessor(getContext(), this::syncItem);
+        mBrowseProcessor = new BrowseProcessorManager(getContext(), this::syncItem);
     }
 
     public static ChannelPresenter instance(Context context) {
@@ -168,10 +159,10 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
             getView().clear();
             updateRows(obtainChannelObservable(channelId));
             // Fix double results. Prevent from doing the same in onViewInitialized()
-            mChannelId = null;
+            //mChannelId = null;
         }
 
-        ViewManager.instance(getContext()).startView(ChannelView.class);
+        getViewManager().startView(ChannelView.class);
     }
 
     public String getChannelId() {
@@ -192,8 +183,9 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
 
     private void disposeActions() {
         RxHelper.disposeActions(mUpdateAction, mScrollAction);
-        mServiceManager.disposeActions();
+        getServiceManager().disposeActions();
         mSortIdx = 0;
+        mBrowseProcessor.dispose();
     }
 
     private void updateRows(Observable<List<MediaGroup>> group) {
@@ -214,14 +206,14 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     }
 
     public Observable<List<MediaGroup>> obtainChannelObservable(String channelId) {
-        return mService.getContentService().getChannelObserve(channelId);
+        return getContentService().getChannelObserve(channelId);
     }
 
     public void updateRows(List<MediaGroup> mediaGroups) {
         if (getView() == null) { // starting from outside (e.g. MediaServiceManager)
             mChannelId = null;
             mPendingGroups.add(mediaGroups);
-            ViewManager.instance(getContext()).startView(ChannelView.class);
+            getViewManager().startView(ChannelView.class);
             return;
         }
 
@@ -237,7 +229,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
 
             VideoGroup group = VideoGroup.from(mediaGroup);
             getView().update(group);
-            mDeArrowProcessor.process(group);
+            mBrowseProcessor.process(group);
         }
 
         getView().showProgressBar(false);
@@ -266,14 +258,12 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
 
         MediaGroup mediaGroup = group.getMediaGroup();
 
-        ContentService contentService = mService.getContentService();
-
-        mScrollAction = contentService.continueGroupObserve(mediaGroup)
+        mScrollAction = getContentService().continueGroupObserve(mediaGroup)
                 .subscribe(
                         continueMediaGroup -> {
                             VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup);
                             getView().update(newGroup);
-                            mDeArrowProcessor.process(newGroup);
+                            mBrowseProcessor.process(newGroup);
                         },
                         error -> {
                             Log.e(TAG, "continueGroup error: %s", error.getMessage());
@@ -324,7 +314,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
             } else if (item.videoId != null) {
                 LoadingManager.showLoading(getContext(), true);
                 //MessageHelpers.showMessage(getContext(), R.string.wait_data_loading);
-                mServiceManager.loadMetadata(item, metadata -> {
+                getServiceManager().loadMetadata(item, metadata -> {
                     LoadingManager.showLoading(getContext(), false);
                     callback.onChannelId(metadata.getChannelId());
                     item.channelId = metadata.getChannelId();
@@ -355,7 +345,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     }
 
     public void onSearchSettingsClicked() {
-        Observable<List<MediaGroup>> sorting = mService.getContentService().getChannelSortingObserve(getChannelId());
+        Observable<List<MediaGroup>> sorting = getContentService().getChannelSortingObserve(getChannelId());
         Disposable result = sorting.subscribe(
                 items -> {
                     AppDialogPresenter dialogPresenter = AppDialogPresenter.instance(getContext());
@@ -365,7 +355,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
                         final int tempIdx = idx;
                         options.add(UiOptionItem.from(group.getTitle(), item -> {
                             //dialogPresenter.closeDialog();
-                            Observable<MediaGroup> continuation = mService.getContentService().continueGroupObserve(group);
+                            Observable<MediaGroup> continuation = getContentService().continueGroupObserve(group);
                             Disposable result2 = continuation.subscribe(mediaGroup -> {
                                 if (getView() != null) {
                                     VideoGroup replace = VideoGroup.from(mediaGroup);
@@ -387,7 +377,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     }
 
     public boolean onSearchSubmit(String query) {
-        Observable<MediaGroup> search = mService.getContentService().getChannelSearchObserve(getChannelId(), query);
+        Observable<MediaGroup> search = getContentService().getChannelSearchObserve(getChannelId(), query);
         Disposable result = search.subscribe(
                 items -> {
                     VideoGroup update = VideoGroup.from(items);

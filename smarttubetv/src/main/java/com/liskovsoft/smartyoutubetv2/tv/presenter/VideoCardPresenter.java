@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.presenter;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -38,7 +39,7 @@ public class VideoCardPresenter extends LongClickPresenter {
     private int mDefaultTextColor = -1;
     private int mSelectedBackgroundColor = -1;
     private int mSelectedTextColor = -1;
-    private boolean mIsAnimatedPreviewsEnabled;
+    private int mCardPreviewType;
     private int mThumbQuality;
     private int mWidth;
     private int mHeight;
@@ -56,7 +57,7 @@ public class VideoCardPresenter extends LongClickPresenter {
         mSelectedTextColor =
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
 
-        mIsAnimatedPreviewsEnabled = isCardAnimatedPreviewsEnabled(context);
+        mCardPreviewType = getCardPreviewType(context);
         mThumbQuality = getThumbQuality(context);
 
         boolean isCardMultilineTitleEnabled = isCardMultilineTitleEnabled(context);
@@ -131,11 +132,17 @@ public class VideoCardPresenter extends LongClickPresenter {
         cardView.setBadgeColor(video.hasNewContent || video.isLive || video.isUpcoming ?
                 ContextCompat.getColor(context, R.color.dark_red) : ContextCompat.getColor(context, R.color.black));
 
-        if (mIsAnimatedPreviewsEnabled) {
-            cardView.setPreviewUrl(video.previewUrl);
+        if (mCardPreviewType != MainUIData.CARD_PREVIEW_DISABLED) {
+            cardView.setPreview(video);
+            cardView.setMute(mCardPreviewType == MainUIData.CARD_PREVIEW_MUTED);
         }
 
         cardView.setMainImageDimensions(mWidth, mHeight);
+
+        if (context instanceof Activity && ((Activity) context).isDestroyed()) {
+            // Glide.with(context): IllegalArgumentException: You cannot start a load for a destroyed activity
+            return;
+        }
 
         Glide.with(context)
                 //.asBitmap() // disable animation (webp, gif)
@@ -169,6 +176,9 @@ public class VideoCardPresenter extends LongClickPresenter {
         // Remove references to images so that the garbage collector can free up memory.
         cardView.setBadgeImage(null);
         cardView.setMainImage(null);
+
+        // Cleanup Glide resources. https://chatgpt.com/share/682120c5-e428-8010-b848-371b2dec0cd5
+        Glide.with(cardView.getContext().getApplicationContext()).clear(cardView.getMainImageView());
     }
 
     private void updateDimensions(Context context) {
@@ -186,8 +196,8 @@ public class VideoCardPresenter extends LongClickPresenter {
         return MainUIData.instance(context).isCardTextAutoScrollEnabled();
     }
 
-    protected boolean isCardAnimatedPreviewsEnabled(Context context) {
-        return MainUIData.instance(context).isCardAnimatedPreviewsEnabled();
+    protected int getCardPreviewType(Context context) {
+        return MainUIData.instance(context).getCardPreviewType();
     }
 
     protected boolean isCardMultilineTitleEnabled(Context context) {

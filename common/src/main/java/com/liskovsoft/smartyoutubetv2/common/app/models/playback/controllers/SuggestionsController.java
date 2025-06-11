@@ -19,15 +19,16 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerController;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.SeekBarSegment;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
-import com.liskovsoft.smartyoutubetv2.common.misc.DeArrowProcessor;
+import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
-import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.utils.UniqueRandom;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
@@ -39,11 +40,10 @@ import java.util.List;
 public class SuggestionsController extends BasePlayerController {
     private static final String TAG = SuggestionsController.class.getSimpleName();
     private final List<Disposable> mActions = new ArrayList<>();
-    private PlayerTweaksData mPlayerTweaksData;
     private MediaItemService mMediaItemService;
     private ContentService mContentService;
-    private DeArrowProcessor mDeArrowProcessor;
-    private Video mNextVideo;
+    private BrowseProcessorManager mBrowseProcessor;
+    private Video mNextSectionVideo;
     private int mFocusCount;
     private int mNextRetryCount;
     private List<ChapterItem> mChapters;
@@ -61,8 +61,7 @@ public class SuggestionsController extends BasePlayerController {
 
     @Override
     public void onInit() {
-        mPlayerTweaksData = PlayerTweaksData.instance(getContext());
-        mDeArrowProcessor = new DeArrowProcessor(getContext(), PlaybackPresenter.instance(getContext())::syncItem);
+        mBrowseProcessor = new BrowseProcessorManager(getContext(), PlaybackPresenter.instance(getContext())::syncItem);
         mMediaItemService = YouTubeServiceManager.instance().getMediaItemService();
         mContentService = YouTubeServiceManager.instance().getContentService();
     }
@@ -128,6 +127,10 @@ public class SuggestionsController extends BasePlayerController {
 
     @Override
     public void onSeekEnd() {
+        if (getPlayer() == null) {
+            return;
+        }
+
         if (getPlayer().isControlsShown()) {
             focusCurrentChapter();
         } else {
@@ -158,13 +161,7 @@ public class SuggestionsController extends BasePlayerController {
             return;
         }
 
-        loadMetadata(video, metadata -> {
-            if (video.isLive != metadata.isLive()) {
-                video.isLiveEnd = true;
-            }
-
-            syncCurrentVideo(metadata, video);
-        });
+        loadMetadata(video, metadata -> syncCurrentVideo(metadata, video));
     }
 
     private void continueGroup(VideoGroup group) {
@@ -196,7 +193,7 @@ public class SuggestionsController extends BasePlayerController {
 
                             VideoGroup videoGroup = VideoGroup.from(group, continueMediaGroup);
                             getPlayer().updateSuggestions(videoGroup);
-                            mDeArrowProcessor.process(videoGroup);
+                            mBrowseProcessor.process(videoGroup);
 
                             mergeUserAndRemoteQueue(videoGroup);
 
@@ -237,6 +234,10 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     public void loadSuggestions(Video video) {
+        if (isEmbedPlayer()) {
+            return;
+        }
+
         clearSuggestionsIfNeeded(video);
         loadMetadata(video, metadata -> updateSuggestions(metadata, video));
     }
@@ -280,8 +281,8 @@ public class SuggestionsController extends BasePlayerController {
         if (next != null) {
             next.fromQueue = true;
             result = next;
-        } else if (mNextVideo != null) {
-            result = mNextVideo;
+        } else if (mNextSectionVideo != null) {
+            result = mNextSectionVideo;
         } else if (current != null && current.nextMediaItem != null) {
             result = Video.from(current.nextMediaItem);
         }
@@ -374,7 +375,7 @@ public class SuggestionsController extends BasePlayerController {
         int groupIndex = -1;
         int suggestRows = -1;
 
-        if (GeneralData.instance(getContext()).isChildModeEnabled() || mPlayerTweaksData.isSuggestionsDisabled()) {
+        if (GeneralData.instance(getContext()).isChildModeEnabled() || getPlayerTweaksData().isSuggestionsDisabled()) {
             suggestRows = video.hasPlaylist() ? 1 : 0;
         }
 
@@ -397,7 +398,7 @@ public class SuggestionsController extends BasePlayerController {
                 //}
 
                 getPlayer().updateSuggestions(videoGroup);
-                mDeArrowProcessor.process(videoGroup);
+                mBrowseProcessor.process(videoGroup);
 
                 if (groupIndex == 0) {
                     focusAndContinueIfNeeded(videoGroup);
@@ -496,7 +497,7 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void startChapterNotificationServiceIfNeeded() {
-        if (mPlayerTweaksData.isChapterNotificationEnabled()) {
+        if (getPlayerTweaksData().isChapterNotificationEnabled()) {
             Utils.postDelayed(mChapterHandler, 1_000); // small delay to give a chance to complete dialog transitions
         }
     }
@@ -532,12 +533,12 @@ public class SuggestionsController extends BasePlayerController {
     private void appendSectionPlaylistIfNeeded(Video video) {
         if (!video.isSectionPlaylistEnabled(getContext())) {
             // Important fix. Gives priority to playlist or suggestion.
-            mNextVideo = null;
+            mNextSectionVideo = null;
             return;
         }
 
         getPlayer().updateSuggestions(video.getGroup());
-        focusAndContinueIfNeeded(video.getGroup(), () -> appendNextSectionVideoIfNeeded(video));
+        focusAndContinueIfNeeded(video.getGroup(), () -> findNextSectionVideoIfNeeded(video));
     }
 
     private void markAsQueueIfNeeded(Video item) {
@@ -645,12 +646,37 @@ public class SuggestionsController extends BasePlayerController {
         }
     }
 
-    private void appendNextSectionVideoIfNeeded(Video video) {
+    private void findNextSectionVideoIfNeeded(Video video) {
         if (!video.isSectionPlaylistEnabled(getContext())) {
             return;
         }
 
-        mNextVideo = null;
+        if (getPlayerData().getPlaybackMode() == PlayerConstants.PLAYBACK_MODE_SHUFFLE) {
+            findRandomSectionVideo(video);
+        } else {
+            findNextSectionVideo(video);
+        }
+    }
+
+    private void findRandomSectionVideo(Video video) {
+        mNextSectionVideo = null;
+
+        VideoGroup group = video.getGroup();
+
+        if (group == null || group.isEmpty()) {
+            return;
+        }
+
+        int currentIdx = group.indexOf(video);
+
+        int nextIdx = UniqueRandom.getRandomIndex(currentIdx, group.getSize());
+
+        mNextSectionVideo = group.get(nextIdx);
+        getPlayer().setNextTitle(mNextSectionVideo);
+    }
+
+    private void findNextSectionVideo(Video video) {
+        mNextSectionVideo = null;
 
         VideoGroup group = video.getGroup();
 
@@ -664,8 +690,8 @@ public class SuggestionsController extends BasePlayerController {
         for (Video current : videos) {
             if (found && current.hasVideo() && !current.isUpcoming) {
                 mNextRetryCount = 0;
-                mNextVideo = current;
-                getPlayer().setNextTitle(mNextVideo);
+                mNextSectionVideo = current;
+                getPlayer().setNextTitle(mNextSectionVideo);
                 return;
             }
 
@@ -677,7 +703,7 @@ public class SuggestionsController extends BasePlayerController {
         if (mNextRetryCount > 0) {
             mNextRetryCount = 0;
         } else {
-            continueGroup(group, continuation -> appendNextSectionVideoIfNeeded(video), getPlayer().isSuggestionsShown());
+            continueGroup(group, continuation -> findNextSectionVideoIfNeeded(video), getPlayer().isSuggestionsShown());
             mNextRetryCount++;
         }
     }
@@ -771,7 +797,10 @@ public class SuggestionsController extends BasePlayerController {
     private void disposeActions() {
         RxHelper.disposeActions(mActions);
         mChapters = null;
-        mNextVideo = null;
+        mNextSectionVideo = null;
+        if (mBrowseProcessor != null) {
+            mBrowseProcessor.dispose();
+        }
     }
 
     private void appendDislikes(Video video) {
@@ -779,7 +808,7 @@ public class SuggestionsController extends BasePlayerController {
             return;
         }
 
-        if (!mPlayerTweaksData.isLikesCounterEnabled()) {
+        if (!getPlayerTweaksData().isLikesCounterEnabled()) {
             video.likeCount = null;
             video.dislikeCount = null;
             getPlayer().setVideo(video);

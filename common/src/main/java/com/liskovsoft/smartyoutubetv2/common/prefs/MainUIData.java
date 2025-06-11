@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.common.prefs;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
+
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.R;
@@ -11,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.provide
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase;
 import com.liskovsoft.smartyoutubetv2.common.utils.ClickbaitRemover;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,9 @@ import java.util.List;
 
 public class MainUIData extends DataChangeBase implements ProfileChangeListener {
     private static final String MAIN_UI_DATA = "main_ui_data2";
+    public static final int CARD_PREVIEW_DISABLED = 0;
+    public static final int CARD_PREVIEW_MUTED = 1;
+    public static final int CARD_PREVIEW_FULL = 2;
     public static final int CHANNEL_SORTING_NEW_CONTENT = 0;
     public static final int CHANNEL_SORTING_NAME = 1;
     public static final int CHANNEL_SORTING_DEFAULT = 2;
@@ -82,7 +87,6 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     private static MainUIData sInstance;
     private final Context mContext;
     private final AppPrefs mPrefs;
-    private boolean mIsCardAnimatedPreviewsEnabled;
     private boolean mIsCardMultilineTitleEnabled;
     private boolean mIsCardMultilineSubtitleEnabled;
     private boolean mIsCardTextAutoScrollEnabled;
@@ -103,6 +107,9 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     private boolean mIsChannelsFilterEnabled;
     private boolean mIsChannelSearchBarEnabled;
     private boolean mIsPinnedChannelRowsEnabled;
+    private int mCardPreviewType;
+    private final Runnable mPersistStateInt = this::persistStateInt;
+    private boolean mIsUnlocalizedTitlesEnabled;
 
     private MainUIData(Context context) {
         mContext = context;
@@ -118,15 +125,6 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         }
 
         return sInstance;
-    }
-
-    public void enableCardAnimatedPreviews(boolean enable) {
-        mIsCardAnimatedPreviewsEnabled = enable;
-        persistState();
-    }
-
-    public boolean isCardAnimatedPreviewsEnabled() {
-        return mIsCardAnimatedPreviewsEnabled;
     }
 
     public void enableCardMultilineTitle(boolean enable) {
@@ -334,6 +332,24 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         return (mTopButtons & button) == button;
     }
 
+    public int getCardPreviewType() {
+        return mCardPreviewType;
+    }
+
+    public void setCardPreviewType(int type) {
+        mCardPreviewType = type;
+        persistState();
+    }
+
+    public boolean isUnlocalizedTitlesEnabled() {
+        return mIsUnlocalizedTitlesEnabled;
+    }
+
+    public void enableUnlocalizedTitles(boolean enabled) {
+        mIsUnlocalizedTitlesEnabled = enabled;
+        persistState();
+    }
+
     private void initColorSchemes() {
         mColorSchemes.add(new ColorScheme(
                 R.string.color_scheme_teal,
@@ -405,6 +421,8 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         mIsChannelsFilterEnabled = Helpers.parseBoolean(split, 18, true);
         mIsChannelSearchBarEnabled = Helpers.parseBoolean(split, 19, true);
         mIsPinnedChannelRowsEnabled = Helpers.parseBoolean(split, 20, true);
+        mCardPreviewType = Helpers.parseInt(split, 21, CARD_PREVIEW_DISABLED);
+        mIsUnlocalizedTitlesEnabled = Helpers.parseBoolean(split, 22, false);
 
         for (Long menuItem : MENU_ITEM_DEFAULT_ORDER) {
             if (!mMenuItemsOrdered.contains(menuItem)) {
@@ -420,16 +438,22 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         
         updateDefaultValues();
     }
-    
+
     private void persistState() {
-        mPrefs.setProfileData(MAIN_UI_DATA, Helpers.mergeData(mIsCardAnimatedPreviewsEnabled,
+        onDataChange();
+        Utils.postDelayed(mPersistStateInt, 10_000);
+    }
+    
+    private void persistStateInt() {
+        mPrefs.setProfileData(MAIN_UI_DATA, Helpers.mergeData(null,
                 mVideoGridScale, mUIScale, mColorSchemeIndex, mIsCardMultilineTitleEnabled,
                 mChannelCategorySorting, mPlaylistsStyle, mCardTitleLinesNum, mIsCardTextAutoScrollEnabled,
                 mIsUploadsOldLookEnabled, mIsUploadsAutoLoadEnabled, mCardTextScrollSpeed, mMenuItems, mTopButtons,
                 null, mThumbQuality, mIsCardMultilineSubtitleEnabled, Helpers.mergeList(mMenuItemsOrdered),
-                mIsChannelsFilterEnabled, mIsChannelSearchBarEnabled, mIsPinnedChannelRowsEnabled));
+                mIsChannelsFilterEnabled, mIsChannelSearchBarEnabled, mIsPinnedChannelRowsEnabled, mCardPreviewType,
+                mIsUnlocalizedTitlesEnabled));
 
-        onDataChange();
+        //onDataChange();
     }
 
     public static class ColorScheme {

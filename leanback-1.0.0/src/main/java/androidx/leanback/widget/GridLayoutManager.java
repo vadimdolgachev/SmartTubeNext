@@ -2229,9 +2229,17 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
                 if (maxChangeEdge > minChangedEdge) {
                     mExtraLayoutSpaceInPreLayout = maxChangeEdge - minChangedEdge;
                 }
-                // append items for mExtraLayoutSpaceInPreLayout
-                appendVisibleItems();
-                prependVisibleItems();
+                // MOD: fix RecycleView crash on Amazon
+                try {
+                    // append items for mExtraLayoutSpaceInPreLayout
+                    appendVisibleItems();
+                    prependVisibleItems();
+                } catch (IndexOutOfBoundsException | NullPointerException | IllegalArgumentException e) {
+                    // IndexOutOfBoundsException: Invalid item position -1(-1). Item count:12 androidx.leanback.widget.VerticalGridView
+                    // NullPointerException: Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()'
+                    // IllegalArgumentException: VideoCardPresenter$1 is not a direct child of HorizontalGridView
+                    e.printStackTrace();
+                }
             }
             mFlag &= ~PF_STAGE_MASK;
             leaveContext();
@@ -2271,7 +2279,15 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
             mFlag |= PF_FAST_RELAYOUT;
             // If grid view is empty, we will start from mFocusPosition
             mGrid.setStart(mFocusPosition);
-            fastRelayout();
+            // MOD: fix RecycleView crash on Ugoos
+            try {
+                fastRelayout();
+            } catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
+                // IllegalArgumentException: Called attach on a child which is not detached: ViewHolder{434061b0 position=10 id=-1, oldPos=-1, pLpos:-1 no parent}
+                // IllegalStateException: Layout state should be one of 100 but it is 10
+                // NullPointerException: Attempt to read from field 'int androidx.recyclerview.widget.ViewInfoStore$InfoRecord.flags' on a null object reference
+                e.printStackTrace();
+            }
         } else {
             mFlag &= ~PF_FAST_RELAYOUT;
             // layoutInit() has detached all views, so start from scratch
@@ -2302,8 +2318,16 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
             oldFirstVisible = mGrid.getFirstVisibleIndex();
             oldLastVisible = mGrid.getLastVisibleIndex();
             focusToViewInLayout(hadFocus, scrollToFocus, -deltaPrimary, -deltaSecondary);
-            appendVisibleItems();
-            prependVisibleItems();
+            // MOD: fix RecycleView crash on Droidlogic
+            try {
+                appendVisibleItems();
+                prependVisibleItems();
+            } catch (IndexOutOfBoundsException | NullPointerException | IllegalArgumentException e) {
+                // IndexOutOfBoundsException: Invalid item position -1(-1). Item count:12 androidx.leanback.widget.VerticalGridView
+                // NullPointerException: Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()'
+                // IllegalArgumentException: VideoCardPresenter$1 is not a direct child of HorizontalGridView
+                e.printStackTrace();
+            }
             // b/67370222: do not removeInvisibleViewsAtFront/End() in the loop, otherwise
             // loop may bounce between scroll forward and scroll backward forever. Example:
             // Assuming there are 19 items, child#18 and child#19 are both in RV, we are
@@ -2320,8 +2344,13 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
             //   5  (back to 1 and loop forever)
         } while (mGrid.getFirstVisibleIndex() != oldFirstVisible
                 || mGrid.getLastVisibleIndex() != oldLastVisible);
-        removeInvisibleViewsAtFront();
-        removeInvisibleViewsAtEnd();
+        try {
+            removeInvisibleViewsAtFront();
+            removeInvisibleViewsAtEnd();
+        } catch (NullPointerException e) {
+            // NullPointerException: Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()' on a null object reference
+            e.printStackTrace();
+        }
 
         if (state.willRunPredictiveAnimations()) {
             fillScrapViewsInPostLayout();
@@ -2398,7 +2427,15 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         mFlag = (mFlag & ~PF_STAGE_MASK) | PF_STAGE_SCROLL;
         int result;
         if (mOrientation == HORIZONTAL) {
-            result = scrollDirectionPrimary(dx);
+            // MOD: fix RecycleView crash on Ugoos
+            try {
+                result = scrollDirectionPrimary(dx);
+            } catch (NullPointerException | IllegalArgumentException e) {
+                // Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()' on a null object reference
+                // IllegalArgumentException: VideoCardPresenter$1 is not a direct child of androidx.leanback.widget.HorizontalGridView
+                e.printStackTrace();
+                result = 0;
+            }
         } else {
             result = scrollDirectionSecondary(dx);
         }
@@ -2417,7 +2454,15 @@ final class GridLayoutManager extends RecyclerView.LayoutManager {
         saveContext(recycler, state);
         int result;
         if (mOrientation == VERTICAL) {
-            result = scrollDirectionPrimary(dy);
+            // MOD: fix RecycleView crash on Eltex (Android 9)
+            try {
+                result = scrollDirectionPrimary(dy);
+            } catch (NullPointerException | IllegalArgumentException e) {
+                // Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()' on a null object reference
+                // IllegalArgumentException: VideoCardPresenter$1 is not a direct child of androidx.leanback.widget.HorizontalGridView
+                e.printStackTrace();
+                result = 0;
+            }
         } else {
             result = scrollDirectionSecondary(dy);
         }
