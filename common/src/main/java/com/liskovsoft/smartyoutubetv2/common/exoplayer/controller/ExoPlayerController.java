@@ -23,7 +23,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.listener.PlayerEventListener;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.ExoMediaSourceFactory;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.errors.TrackErrorFixer;
-import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.ExoPlayerInitializer;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.VolumeBooster;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.ExoFormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
@@ -37,6 +36,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 public class ExoPlayerController implements Player.EventListener, PlayerController {
@@ -47,12 +47,13 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
     private final TrackInfoFormatter2 mTrackFormatter;
     private final TrackErrorFixer mTrackErrorFixer;
     private boolean mOnSourceChanged;
-    private Video mVideo;
+    private WeakReference<Video> mVideo;
     private final PlayerEventListener mEventListener;
     private SimpleExoPlayer mPlayer;
     private PlayerView mPlayerView;
     private VolumeBooster mVolumeBooster;
     private boolean mIsEnded;
+    private Runnable mOnVideoLoaded;
 
     public ExoPlayerController(Context context, PlayerEventListener eventListener) {
         PlayerTweaksData playerTweaksData = PlayerTweaksData.instance(context);
@@ -116,7 +117,7 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
         mTrackSelectorManager.setMergedSource(mediaSource instanceof MergingMediaSource);
         mTrackSelectorManager.invalidate();
         mOnSourceChanged = true;
-        mEventListener.onSourceChanged(mVideo);
+        mEventListener.onSourceChanged(getVideo());
         mPlayer.prepare(mediaSource);
     }
 
@@ -192,8 +193,7 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
         mMediaSourceFactory.release();
         releasePlayer();
         mPlayerView = null;
-        mVideo = null;
-        // Don't destroy it (needed inside bridge)!
+        // Don't destroy it (needed inside the bridge)!
         //mEventListener = null;
     }
 
@@ -227,12 +227,12 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
 
     @Override
     public void setVideo(Video video) {
-        mVideo = video;
+        mVideo = new WeakReference<>(video);
     }
 
     @Override
     public Video getVideo() {
-        return mVideo;
+        return mVideo != null ? mVideo.get() : null;
     }
 
     @Override
@@ -301,13 +301,14 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
     }
 
     private void notifyOnVideoLoad() {
-        if (mVideo == null) {
-            return;
-        }
-
         if (mOnSourceChanged) {
             mOnSourceChanged = false;
-            mEventListener.onVideoLoaded(mVideo);
+
+            mEventListener.onVideoLoaded(getVideo());
+
+            if (mOnVideoLoaded != null) {
+                mOnVideoLoaded.run();
+            }
 
             // Produce thread sync problems
             // Attempt to read from field 'java.util.TreeMap$Node java.util.TreeMap$Node.left' on a null object reference
@@ -440,6 +441,11 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
         }
     }
 
+    @Override
+    public void setOnVideoLoaded(Runnable onVideoLoaded) {
+        mOnVideoLoaded = onVideoLoaded;
+    }
+
     private void setQualityInfo(String qualityInfoStr) {
         if (mPlayerView != null && qualityInfoStr != null) {
             mPlayerView.setQualityInfo(qualityInfoStr);
@@ -479,13 +485,16 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
     }
 
     private void releasePlayer() {
+        if (mPlayer == null) {
+            return;
+        }
+
         try {
-            if (mPlayer != null) {
-                mPlayer.removeListener(this);
-                mPlayer.stop(true);
-                mPlayer.release();
-                mPlayer = null;
-            }
+            mPlayer.removeListener(this);
+            mPlayer.stop(true); // Cause input lags due to high cpu load?
+            mPlayer.clearVideoSurface();
+            mPlayer.release();
+            mPlayer = null;
         } catch (ArrayIndexOutOfBoundsException e) { // thrown on stop()
             e.printStackTrace();
         }

@@ -17,7 +17,6 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.leanback.app.RowsSupportFragment;
 import androidx.leanback.media.PlayerAdapter;
@@ -92,7 +91,6 @@ import java.util.Map;
  * Plays selected video, loads playlist and related videos, and delegates playback to
  * {@link VideoPlayerGlue}.
  */
-@RequiresApi(19)
 public class PlaybackFragment extends SeekModePlaybackFragment implements PlaybackView {
     private static final String TAG = PlaybackFragment.class.getSimpleName();
     private static final String SELECTED_VIDEO_ID = "SelectedVideoId";
@@ -282,19 +280,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     public void onFinish() {
-        //// Fix background play when playing trailers from NUM
-        //// On API > 23 onStop not immediately occurred after onPause
-        //if (getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_DEFAULT) {
-        //    if (Util.SDK_INT > 23) {
-        //        maybeReleasePlayer();
-        //    }
-        //
-        //    // Bug: history not updated on Android 6.0.1
-        //    // Remote control fix
-        //    // Assuming that user wants to close the player
-        //    // setVideo(null);
-        //}
-
         if (Util.SDK_INT > 23) {
             maybeReleasePlayer();
         }
@@ -384,27 +369,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             return;
         }
 
-        //if (AppDialogPresenter.instance(getContext()).isDialogShown() ||
-        //        isEngineBlocked()) {
-        //    Log.d(TAG, "releasePlayer: Playback activity is blocked. Exiting...");
-        //    return;
-        //}
-
-        //// Inside dialogs we could change engine settings on fly
-        //if (AppDialogPresenter.instance(getContext()).isDialogShown() ||
-        //        (getBackgroundMode() != PlayerEngine.BACKGROUND_MODE_DEFAULT && Utils.isHardScreenOff(getContext()))) {
-        //    Log.d(TAG, "releasePlayer: Engine release is blocked by dialog or the screen is off. Exiting...");
-        //    return;
-        //}
-        //
-        //// Ensure to continue playback in audio mode (activity should be blocked)
-        //if (getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_SOUND &&
-        //        ViewManager.instance(getContext()).getBlockedTop() == PlaybackActivity.class &&
-        //        !isInPIPMode()) {
-        //    Log.d(TAG, "releasePlayer: Playback activity is blocked. Exiting...");
-        //    return;
-        //}
-
         releasePlayer();
     }
 
@@ -413,8 +377,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             Log.d(TAG, "releasePlayer: Start releasing player engine...");
             mPlaybackPresenter.onEngineReleased();
             destroyPlayerObjects();
-            // Improve memory usage??? Player may hangs on a second after close
-            //Runtime.getRuntime().gc();
         }
     }
 
@@ -426,6 +388,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         createPlayerObjects();
 
+        mPlaybackPresenter.setView(this); // replaced by the embed player?
         mPlaybackPresenter.onEngineInitialized();
     }
 
@@ -575,7 +538,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getVideo().getPlayerTitle());
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, getVideo().getPlayerTitle());
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, getVideo().getAuthor());
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, getVideo().getPlayerSubtitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, Helpers.toString(getVideo().getPlayerSubtitle()));
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, getVideo().getCardImageUrl());
             metadataBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDurationMs());
 
@@ -1085,17 +1048,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         return mIsEngineBlocked;
     }
 
-    //@Override
-    //public void setBackgroundMode(int type) {
-    //    Log.d(TAG, "Setting engine block type to %s...", type);
-    //    mPlaybackMode = type;
-    //}
-    //
-    //@Override
-    //public int getBackgroundMode() {
-    //    return mPlaybackMode;
-    //}
-
     @Override
     public boolean isInPIPMode() {
         PlaybackActivity playbackActivity = (PlaybackActivity) getActivity();
@@ -1114,20 +1066,15 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
-    public void setSpeed(float speed) {
-        mExoPlayerController.setSpeed(speed);
-        // NOTE: Real speed isn't changed immediately, so use supplied speed data
-        setSpeedButtonState(speed != 1.0f);
-    }
-
-    @Override
     public float getSpeed() {
         return mExoPlayerController.getSpeed();
     }
 
     @Override
-    public void setPitch(float pitch) {
-        mExoPlayerController.setPitch(pitch);
+    public void setSpeed(float speed) {
+        mExoPlayerController.setSpeed(speed);
+        // NOTE: Real speed isn't changed immediately, so use supplied speed data
+        setSpeedButtonState(speed != 1.0f);
     }
 
     @Override
@@ -1136,8 +1083,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
-    public void setVolume(float volume) {
-        mExoPlayerController.setVolume(volume);
+    public void setPitch(float pitch) {
+        mExoPlayerController.setPitch(pitch);
     }
 
     @Override
@@ -1146,37 +1093,41 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
-    public void setVideoZoomMode(int mode) {
-        setResizeMode(mode);
+    public void setVolume(float volume) {
+        mExoPlayerController.setVolume(volume);
     }
 
     @Override
-    public int getVideoZoomMode() {
-        return getResizeMode();
+    public int getResizeMode() {
+        return getResize();
     }
 
     @Override
-    public void setVideoZoom(int percents) {
+    public void setResizeMode(int mode) {
+        setResize(mode);
+    }
+
+    @Override
+    public void setZoomPercents(int percents) {
         setZoom(percents);
     }
 
     @Override
-    public void setVideoAspectRatio(float ratio) {
-        setAspectRatio(ratio);
+    public void setAspectRatio(float ratio) {
+        setAspect(ratio);
     }
 
     @Override
-    public void setVideoRotation(int angle) {
+    public void setRotationAngle(int angle) {
         setRotation(angle);
     }
 
-    // End Engine Events
-
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        //mPlaybackPresenter.onViewDestroyed();
+    public void setVideoFlipEnabled(boolean enabled) {
+        setFlipEnabled(enabled);
     }
+
+    // End Engine Events
 
     @Override
     public void onDestroy() {
@@ -1195,6 +1146,10 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
     @Override
     public Video getVideo() {
+        if (mExoPlayerController == null) {
+            return null;
+        }
+
         return mExoPlayerController.getVideo();
     }
 
@@ -1637,6 +1592,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         setChatReceiver(null);
         setSeekBarSegments(null);
         setSeekPreviewTitle(null);
+    }
+
+    @Override
+    public boolean isEmbed() {
+        return false;
     }
 
     /**

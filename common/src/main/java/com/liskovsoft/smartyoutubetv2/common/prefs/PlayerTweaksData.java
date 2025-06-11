@@ -41,6 +41,7 @@ public class PlayerTweaksData implements ProfileChangeListener {
     public static final int PLAYER_BUTTON_SCREEN_OFF_TIMEOUT = 1 << 24;
     public static final int PLAYER_BUTTON_SOUND_OFF = 1 << 25;
     public static final int PLAYER_BUTTON_AFR = 1 << 26;
+    public static final int PLAYER_BUTTON_VIDEO_FLIP = 1 << 27;
     public static final int PLAYER_BUTTON_DEFAULT = PLAYER_BUTTON_SEARCH | PLAYER_BUTTON_PIP | PLAYER_BUTTON_SCREEN_OFF_TIMEOUT | PLAYER_BUTTON_VIDEO_SPEED |
             PLAYER_BUTTON_VIDEO_STATS | PLAYER_BUTTON_OPEN_CHANNEL | PLAYER_BUTTON_SUBTITLES | PLAYER_BUTTON_SUBSCRIBE |
             PLAYER_BUTTON_LIKE | PLAYER_BUTTON_DISLIKE | PLAYER_BUTTON_ADD_TO_PLAYLIST | PLAYER_BUTTON_PLAY_PAUSE |
@@ -100,6 +101,7 @@ public class PlayerTweaksData implements ProfileChangeListener {
     private boolean mIsOculusQuestFixEnabled;
     private boolean mIsPersistentAntiBotFixEnabled;
     private boolean mIsAudioFocusEnabled;
+    private final Runnable mPersistDataInt = this::persistDataInt;
 
     private PlayerTweaksData(Context context) {
         mPrefs = AppPrefs.instance(context);
@@ -671,6 +673,10 @@ public class PlayerTweaksData implements ProfileChangeListener {
     }
 
     private void persistData() {
+        Utils.postDelayed(mPersistDataInt, 10_000);
+    }
+
+    private void persistDataInt() {
         mPrefs.setProfileData(VIDEO_PLAYER_TWEAKS_DATA, Helpers.mergeData(
                 mIsAmlogicFixEnabled, mIsAmazonFrameDropFixEnabled, mIsSnapToVsyncDisabled,
                 mIsProfileLevelCheckSkipped, mIsSWDecoderForced, mIsTextureViewEnabled,
@@ -703,6 +709,7 @@ public class PlayerTweaksData implements ProfileChangeListener {
 
     @Override
     public void onProfileChanged() {
+        Utils.removeCallbacks(mPersistDataInt);
         restoreData();
     }
 }

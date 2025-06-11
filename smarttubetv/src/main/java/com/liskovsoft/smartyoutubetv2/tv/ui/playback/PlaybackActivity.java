@@ -15,11 +15,9 @@ import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
-import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
@@ -30,7 +28,6 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.common.LeanbackActivity;
  * For more information on game controller capabilities with leanback, review the
  * <a href="https://developer.android.com/training/game-controllers/controller-input.html">docs</href>.
  */
-@TargetApi(19)
 public class PlaybackActivity extends LeanbackActivity {
     private static final String TAG = PlaybackActivity.class.getSimpleName();
     private static final float GAMEPAD_TRIGGER_INTENSITY_ON = 0.5f;
@@ -38,10 +35,6 @@ public class PlaybackActivity extends LeanbackActivity {
     private static final float GAMEPAD_TRIGGER_INTENSITY_OFF = 0.45f;
     private boolean gamepadTriggerPressed = false;
     private PlaybackFragment mPlaybackFragment;
-    private ViewManager mViewManager;
-    private PlayerTweaksData mPlayerTweaksData;
-    private PlayerData mPlayerData;
-    private GeneralData mGeneralData;
     private boolean mIsBackPressed;
 
     @Override
@@ -53,10 +46,6 @@ public class PlaybackActivity extends LeanbackActivity {
         if (fragment instanceof PlaybackFragment) {
             mPlaybackFragment = (PlaybackFragment) fragment;
         }
-        mViewManager = ViewManager.instance(this);
-        mPlayerTweaksData = PlayerTweaksData.instance(this);
-        mPlayerData = PlayerData.instance(this);
-        mGeneralData = GeneralData.instance(this);
     }
 
     @Override
@@ -192,12 +181,12 @@ public class PlaybackActivity extends LeanbackActivity {
         if (doNotDestroy() && !skipPip()) {
             mPlaybackFragment.blockEngine(true);
             // Ensure to opening this activity when the user is returning to the app
-            mViewManager.blockTop(this);
-            mViewManager.startParentView(this);
+            getViewManager().blockTop(this);
+            getViewManager().startParentView(this);
         } else {
-            if (mPlayerTweaksData.isKeepFinishedActivityEnabled()) {
+            if (getPlayerTweaksData().isKeepFinishedActivityEnabled()) {
                 //moveTaskToBack(true); // Don't do this or you'll have problems when player overlaps other apps (e.g. casting)
-                mViewManager.startParentView(this);
+                getViewManager().startParentView(this);
 
                 // Player with TextureView keeps running in background because onStop() fired with huge delay (~5sec).
                 mPlaybackFragment.maybeReleasePlayer();
@@ -216,7 +205,7 @@ public class PlaybackActivity extends LeanbackActivity {
     @Override
     protected void onPause() {
         boolean hasDialogBug = AppDialogPresenter.instance(this).isDialogShown() && Build.VERSION.SDK_INT <= 23;
-        boolean isScreenOff = mPlayerData.getBackgroundMode() != PlayerData.BACKGROUND_MODE_DEFAULT && Utils.isHardScreenOff(this);
+        boolean isScreenOff = getPlayerData().getBackgroundMode() != PlayerData.BACKGROUND_MODE_DEFAULT && Utils.isHardScreenOff(this);
 
         if (hasDialogBug || isScreenOff) {
             mPlaybackFragment.blockEngine(true);
@@ -277,7 +266,7 @@ public class PlaybackActivity extends LeanbackActivity {
 
         //if (!isInPictureInPictureMode) {
         //    // Disable collapse app to Home launcher
-        //    mViewManager.enableMoveToBack(false);
+        //    getViewManager().enableMoveToBack(false);
         //}
     }
 
@@ -288,11 +277,11 @@ public class PlaybackActivity extends LeanbackActivity {
     public void onUserLeaveHint() {
         // Check that user not open dialog/search activity instead of really leaving the activity
         // Activity may be overlapped by the dialog, back is pressed or new view started
-        if (mIsBackPressed || isFinishing() || mViewManager.isNewViewPending() || mGeneralData.getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_BACK) {
+        if (mIsBackPressed || isFinishing() || getViewManager().isNewViewPending() || getGeneralData().getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_BACK) {
             return;
         }
 
-        switch (mPlayerData.getBackgroundMode()) {
+        switch (getPlayerData().getBackgroundMode()) {
             case PlayerData.BACKGROUND_MODE_PLAY_BEHIND:
                 enterBackgroundPlayMode();
                 // Do we need to do something additional when running Play Behind?
@@ -302,17 +291,17 @@ public class PlaybackActivity extends LeanbackActivity {
                 if (doNotDestroy()) {
                     mPlaybackFragment.blockEngine(true);
                     // Ensure to opening this activity when the user will return to the app
-                    mViewManager.blockTop(this);
+                    getViewManager().blockTop(this);
                     // Enable collapse app to Home launcher
-                    //mViewManager.enableMoveToBack(true);
+                    //getViewManager().enableMoveToBack(true);
                 }
                 break;
             case PlayerData.BACKGROUND_MODE_SOUND:
                 if (doNotDestroy()) {
                     // Ensure to continue a playback
                     mPlaybackFragment.blockEngine(true);
-                    mViewManager.blockTop(this);
-                    //mViewManager.enableMoveToBack(true);
+                    getViewManager().blockTop(this);
+                    //getViewManager().enableMoveToBack(true);
                 }
                 break;
         }
@@ -331,7 +320,7 @@ public class PlaybackActivity extends LeanbackActivity {
     }
 
     private boolean skipPip() {
-        return mIsBackPressed && mGeneralData.getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_HOME;
+        return mIsBackPressed && getGeneralData().getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_HOME;
     }
 
     private boolean isEngineBlocked() {
@@ -342,7 +331,7 @@ public class PlaybackActivity extends LeanbackActivity {
     private boolean wannaEnterToPip() {
         //return mPlaybackFragment != null && mPlaybackFragment.getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_PIP && !isInPictureInPictureMode();
         //return mPlaybackFragment != null && mPlaybackFragment.isEngineBlocked() && !isInPictureInPictureMode();
-        boolean isPip = mPlayerData.getBackgroundMode() == PlayerData.BACKGROUND_MODE_PIP || isEngineBlocked();
+        boolean isPip = getPlayerData().getBackgroundMode() == PlayerData.BACKGROUND_MODE_PIP || isEngineBlocked();
         return isPip && !isInPictureInPictureMode();
     }
 
@@ -350,12 +339,12 @@ public class PlaybackActivity extends LeanbackActivity {
         sIsInPipMode = isInPipMode();
         //return sIsInPipMode || mPlaybackFragment.getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_SOUND;
         //return sIsInPipMode || mPlaybackFragment.isEngineBlocked();
-        boolean isBackground = mPlayerData.getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_SOUND || isEngineBlocked();
+        boolean isBackground = getPlayerData().getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_SOUND || isEngineBlocked();
         return sIsInPipMode || isBackground;
     }
 
     //private boolean isBackgroundBackEnabled() {
-    //    return mGeneralData.getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_BACK ||
-    //            mGeneralData.getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_HOME_BACK;
+    //    return getGeneralData().getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_BACK ||
+    //            getGeneralData().getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_HOME_BACK;
     //}
 }

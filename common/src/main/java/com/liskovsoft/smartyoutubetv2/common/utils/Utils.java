@@ -54,27 +54,23 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.jakewharton.processphoenix.ProcessPhoenix;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.GlobalConstants;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.R;
-import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.WebBrowserPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem.VideoPreset;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.TrackSelectorUtil;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.MediaTrack;
-import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlService;
 import com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlWorker;
@@ -88,7 +84,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Utils {
     private static final String REMOTE_CONTROL_RECEIVER_CLASS_NAME = "com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlReceiver";
@@ -499,11 +494,19 @@ public class Utils {
     }
 
     public static void postDelayed(Runnable callback, long delayMs) {
+        if (callback == null) {
+            return;
+        }
+
         sHandler.removeCallbacks(callback);
         sHandler.postDelayed(callback, delayMs);
     }
 
     public static void post(Runnable callback) {
+        if (callback == null) {
+            return;
+        }
+
         sHandler.removeCallbacks(callback);
         sHandler.post(callback);
     }
@@ -514,7 +517,9 @@ public class Utils {
         }
 
         for (Runnable callback : callbacks) {
-             sHandler.removeCallbacks(callback);
+            if (callback != null) {
+                sHandler.removeCallbacks(callback);
+            }
         }
     }
 
@@ -652,62 +657,22 @@ public class Utils {
 
     public static void showRepeatInfo(Context context, int modeIndex) {
         switch (modeIndex) {
-            case PlayerEngineConstants.REPEAT_MODE_ALL:
+            case PlayerConstants.PLAYBACK_MODE_ALL:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_all);
                 break;
-            case PlayerEngineConstants.REPEAT_MODE_ONE:
+            case PlayerConstants.PLAYBACK_MODE_ONE:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_one);
                 break;
-            case PlayerEngineConstants.REPEAT_MODE_PAUSE:
+            case PlayerConstants.PLAYBACK_MODE_PAUSE:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_pause);
                 break;
-            case PlayerEngineConstants.REPEAT_MODE_LIST:
+            case PlayerConstants.PLAYBACK_MODE_LIST:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_pause_alt);
                 break;
-            case PlayerEngineConstants.REPEAT_MODE_CLOSE:
+            case PlayerConstants.PLAYBACK_MODE_CLOSE:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_none);
                 break;
         }
-    }
-
-    /**
-     * Selecting right presenter for the channel.<br/>
-     * Channels could be of two types: regular (usr channel) and playlist channel (contains single row, try search: 'Mon mix')
-     */
-    public static void chooseChannelPresenter(Context context, Video item) {
-        if (item.hasVideo()) { // regular channel
-            ChannelPresenter.instance(context).openChannel(item);
-            return;
-        }
-
-        LoadingManager.showLoading(context, true);
-
-        AtomicInteger atomicIndex = new AtomicInteger(0);
-
-        MediaServiceManager.instance().loadChannelRows(item, group -> {
-            LoadingManager.showLoading(context, false);
-
-            if (group == null || group.size() == 0) {
-                return;
-            }
-
-            int type = group.get(0).getType();
-
-            if (type == MediaGroup.TYPE_CHANNEL_UPLOADS) {
-                if (atomicIndex.incrementAndGet() == 1) {
-                    ChannelUploadsPresenter.instance(context).clear();
-                }
-                ChannelUploadsPresenter.instance(context).update(group.get(0));
-            } else if (type == MediaGroup.TYPE_CHANNEL) {
-                if (atomicIndex.incrementAndGet() == 1) {
-                    ChannelPresenter.instance(context).clear();
-                    ChannelPresenter.instance(context).setChannel(item);
-                }
-                ChannelPresenter.instance(context).updateRows(group);
-            } else {
-                MessageHelpers.showMessage(context, "Unknown type of channel");
-            }
-        });
     }
 
     /**
@@ -794,11 +759,11 @@ public class Utils {
     }
 
     public static boolean isFormatSupported(MediaTrack mediaTrack) {
-        if (mediaTrack.isVP9Codec() && !Helpers.isVP9ResolutionSupported(mediaTrack.getHeight())) {
+        if (mediaTrack.isVP9Codec() && !Helpers.isVP9ResolutionSupported(TrackSelectorUtil.getRealHeight(mediaTrack.format))) {
             return false;
         }
 
-        if (mediaTrack.isAV1Codec() && !Helpers.isAV1ResolutionSupported(mediaTrack.getHeight())) {
+        if (mediaTrack.isAV1Codec() && !Helpers.isAV1ResolutionSupported(TrackSelectorUtil.getRealHeight(mediaTrack.format))) {
             return false;
         }
 
@@ -1092,5 +1057,20 @@ public class Utils {
 
     public static boolean isEnoughRam(Context context) {
         return VERSION.SDK_INT > 21 && Helpers.getDeviceRam(context) > 1_500_000_000; // 1.5 GB
+    }
+
+    public static String getStackTraceAsString(Throwable throwable) {
+        StringBuilder result = new StringBuilder();
+        result.append(throwable.getMessage()).append("\n");
+        StackTraceElement[] elements = throwable.getStackTrace();
+        if (elements.length > 0) {
+            StackTraceElement topElement = elements[0];
+            result.append(topElement.getMethodName());
+            result.append("(").append(topElement.getFileName()).append(":").append(topElement.getLineNumber()).append(")");
+        } else {
+            result.append("No stack trace available");
+        }
+
+        return result.toString();
     }
 }

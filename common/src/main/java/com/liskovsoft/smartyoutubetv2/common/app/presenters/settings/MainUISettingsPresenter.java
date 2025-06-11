@@ -103,11 +103,23 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         return styleOptions;
     }
 
-    private void appendCardStyle(AppDialogPresenter settingsPresenter) {
+    private void appendCardPreviews(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
-        OptionItem animatedPreviewsOption = UiOptionItem.from(getContext().getString(R.string.card_animated_previews),
-                option -> mMainUIData.enableCardAnimatedPreviews(option.isSelected()), mMainUIData.isCardAnimatedPreviewsEnabled());
+        for (int[] pair : new int[][] {
+                {R.string.option_disabled, MainUIData.CARD_PREVIEW_DISABLED},
+                {R.string.card_preview_full, MainUIData.CARD_PREVIEW_FULL},
+                {R.string.card_preview_muted, MainUIData.CARD_PREVIEW_MUTED}}) {
+            options.add(UiOptionItem.from(getContext().getString(pair[0]), optionItem -> {
+                mMainUIData.setCardPreviewType(pair[1]);
+            }, mMainUIData.getCardPreviewType() == pair[1]));
+        }
+
+        settingsPresenter.appendRadioCategory(getContext().getString(R.string.card_preview), options);
+    }
+
+    private void appendCardStyle(AppDialogPresenter settingsPresenter) {
+        List<OptionItem> options = new ArrayList<>();
 
         OptionItem multilineTitle = UiOptionItem.from(getContext().getString(R.string.card_multiline_title),
                 option -> mMainUIData.enableCardMultilineTitle(option.isSelected()), mMainUIData.isCardMultilineTitleEnabled());
@@ -117,13 +129,16 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
 
         OptionItem autoScrolledTitle = UiOptionItem.from(getContext().getString(R.string.card_auto_scrolled_title),
                 option -> mMainUIData.enableCardTextAutoScroll(option.isSelected()), mMainUIData.isCardTextAutoScrollEnabled());
+
+        OptionItem unlocalizedTitle = UiOptionItem.from(getContext().getString(R.string.card_unlocalized_titles),
+                option -> mMainUIData.enableUnlocalizedTitles(option.isSelected()), mMainUIData.isUnlocalizedTitlesEnabled());
         
-        options.add(animatedPreviewsOption);
         options.add(multilineTitle);
         options.add(multilineSubtitle);
         if (Build.VERSION.SDK_INT > 19) {
             options.add(autoScrolledTitle);
         }
+        options.add(unlocalizedTitle);
 
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.cards_style), options);
     }
@@ -251,6 +266,10 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
 
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.card_unlocalized_titles),
+                option -> mMainUIData.enableUnlocalizedTitles(option.isSelected()),
+                mMainUIData.isUnlocalizedTitlesEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.time_format_24) + " " + getContext().getString(R.string.time_format),
                 option -> {

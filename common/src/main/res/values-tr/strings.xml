@@ -140,6 +140,7 @@
     <string name="open_channel_uploads">Kanal yüklemelerini aç</string>
     <string name="app_exit_shortcut">Uygulamadan çıkış</string>
     <string name="player_exit_shortcut">Oynatıcıdan çıkış</string>
+    <string name="search_exit_shortcut">Aramadan çıkış</string>
     <string name="app_exit_none">Çıkış yapma</string>
     <string name="app_double_back_exit">Çift geri</string>
     <string name="app_single_back_exit">Tek geri</string>
@@ -538,6 +539,7 @@
     <string name="loading">Yükleniyor…</string>
     <string name="hide_streams">Canlı yayınları Abonelikler\'de gizle</string>
     <string name="video_rotate">Döndür</string>
+    <string name="video_flip">Ayna</string>
     <string name="trending_searches">Trend olan aramalar</string>
     <string name="video_duration_any">Herhangi biri</string>
     <string name="video_duration">Süre</string>
@@ -696,4 +698,9 @@
     <string name="my_videos">Videolarım</string>
     <string name="player_audio_focus">Ses odaklama (diğer video oynatıcılar algılanırsa duraklatma)</string>
     <string name="paid_content_notification">Ücretli içerik bildirimleri</string>
+    <string name="you_liked">sen beğendin</string>
+    <string name="card_preview_muted">Sessiz video</string>
+    <string name="card_preview_full">Sesli video</string>
+    <string name="card_preview">Kart önizlemesi</string>
+    <string name="card_unlocalized_titles">Yerelleştirilmemiş video başlıkları</string>
 </resources>

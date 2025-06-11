@@ -7,6 +7,8 @@ import android.util.AttributeSet;
 import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
 import androidx.leanback.widget.ImageCardView;
+
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
@@ -100,6 +102,20 @@ public class ComplexImageCardView extends ImageCardView {
         enableVideoPreview(selected);
     }
 
+    @Override
+    public boolean performClick() {
+        mComplexImageView.stopPlayback(true);
+
+        return super.performClick();
+    }
+
+    @Override
+    public boolean performLongClick() {
+        mComplexImageView.stopPlayback(true);
+
+        return super.performLongClick();
+    }
+
     private void enableVideoPreview(boolean selected) {
         if (selected) {
             mComplexImageView.startPlayback();
@@ -108,8 +124,12 @@ public class ComplexImageCardView extends ImageCardView {
         }
     }
 
-    public void setPreviewUrl(String previewUrl) {
-        mComplexImageView.setPreviewUrl(previewUrl);
+    public void setPreview(Video video) {
+        mComplexImageView.setPreview(video);
+    }
+
+    public void setMute(boolean muted) {
+        mComplexImageView.setMute(muted);
     }
 
     public void setTitleLinesNum(int lines) {

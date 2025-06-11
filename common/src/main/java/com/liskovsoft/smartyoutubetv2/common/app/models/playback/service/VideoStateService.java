@@ -26,12 +26,12 @@ public class VideoStateService implements ProfileChangeListener {
     private final AppPrefs mPrefs;
     private static final String DELIM = "&si;";
     private boolean mIsHistoryBroken;
-    private final Runnable mPersistStateReal = this::persistStateReal;
+    private final Runnable mPersistStateInt = this::persistStateInt;
 
     private VideoStateService(Context context) {
         mPrefs = AppPrefs.instance(context);
         mPrefs.addListener(this);
-        mStates = Helpers.createLRUList(
+        mStates = Helpers.createSafeLRUList(
                 Utils.isEnoughRam(mPrefs.getContext()) ? MAX_PERSISTENT_STATE_SIZE : MIN_PERSISTENT_STATE_SIZE);
         restoreState();
     }
@@ -97,17 +97,22 @@ public class VideoStateService implements ProfileChangeListener {
 
         String[] split = Helpers.splitData(data);
 
-        setStateDataSafe(Helpers.parseStr(split, 0));
+        setStateData(Helpers.parseStr(split, 0));
         mIsHistoryBroken = Helpers.parseBoolean(split, 1);
+    }
+
+    private void persistStateInt() {
+        if (mIsHistoryBroken) {
+            mPrefs.setStateUpdaterData(Helpers.mergeData(getStateData(), mIsHistoryBroken));
+        } else {
+            // Eliminate additional string creation with the merge
+            mPrefs.setStateUpdaterData(getStateData());
+        }
     }
 
     public void persistState() {
         // Improve memory and disc usage
-        Utils.postDelayed(mPersistStateReal, PERSIST_DELAY_MS);
-    }
-
-    private void persistStateReal() {
-        mPrefs.setStateUpdaterData(Helpers.mergeData(getStateData(), mIsHistoryBroken));
+        Utils.postDelayed(mPersistStateInt, PERSIST_DELAY_MS);
     }
 
     public static class State {
