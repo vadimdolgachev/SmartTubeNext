@@ -22,6 +22,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerContr
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.listener.PlayerEventListener;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.SignInPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -168,9 +169,9 @@ public class VideoLoaderController extends BasePlayerController {
 
         mLastErrorType = type;
         runEngineErrorAction(type, rendererIndex, error);
-        if (!mIsWasVideoStartError && mLastVideo != null) {
-            Analytics.sendVideoStartError(mLastVideo.videoId,
-                    mLastVideo.title,
+        if (!mIsWasVideoStartError && getVideo() != null) {
+            Analytics.sendVideoStartError(getVideo().videoId,
+                    getVideo().title,
                     error.getMessage());
             mIsWasVideoStartError = true;
         }
@@ -393,12 +394,12 @@ public class VideoLoaderController extends BasePlayerController {
             if (formatInfo.isHistoryBroken()) { // bot check error or the video is hidden
                 YouTubeServiceManager.instance().applyNoPlaybackFix();
                 YouTubeServiceManager.instance().applyAntiBotFix();
-                mPlayerTweaksData.enablePersistentAntiBotFix(true);
+                getPlayerTweaksData().enablePersistentAntiBotFix(true);
                 scheduleReloadVideoTimer(5_000);
             } else {scheduleNextVideoTimer(5_000);
             if (!mIsWasVideoStartError) {
-                Analytics.sendVideoStartError(mLastVideo.videoId,
-                        mLastVideo.title,
+                Analytics.sendVideoStartError(getVideo().videoId,
+                        getVideo().title,
                         formatInfo.getPlayabilityStatus());
                 mIsWasVideoStartError = true;
             }
@@ -406,7 +407,7 @@ public class VideoLoaderController extends BasePlayerController {
                 SignInPresenter.instance(getActivity()).start();
                 getActivity().finish();
             }
-        }} else if (formatInfo.containsDashVideoFormats() && acceptDashVideoFormats(formatInfo)) {
+        }} else if (formatInfo.containsDashVideoFormats() && acceptDashVideo(formatInfo)) {
             Log.d(TAG, "Found regular video in dash format. Loading...");
 
             mMpdStreamAction = formatInfo.createMpdStreamObservable()
@@ -437,8 +438,8 @@ public class VideoLoaderController extends BasePlayerController {
             bgImageUrl = getVideo().getBackgroundUrl();
             scheduleReloadVideoTimer(30 * 1_000);
             if (!mIsWasVideoStartError) {
-                Analytics.sendVideoStartError(mLastVideo.videoId,
-                        mLastVideo.title,
+                Analytics.sendVideoStartError(getVideo().videoId,
+                        getVideo().title,
                         formatInfo.getPlayabilityStatus());
                 mIsWasVideoStartError = true;
             }
@@ -855,8 +856,8 @@ public class VideoLoaderController extends BasePlayerController {
     @Override
     public void onPlay() {
         Utils.removeCallbacks(mOnLongBuffering);
-        if (!mIsWasStarted && mLastVideo != null) {
-            Analytics.sendVideoStarted(mLastVideo.videoId, mLastVideo.title);
+        if (!mIsWasStarted && getVideo() != null) {
+            Analytics.sendVideoStarted(getVideo().videoId, getVideo().title);
             mIsWasStarted = true;
         }
     }

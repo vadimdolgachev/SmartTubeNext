@@ -72,7 +72,7 @@ public class MainApplication extends MultiDexApplication { // fix: Didn't find c
         viewManager.register(WebBrowserView.class, WebBrowserActivity.class, BrowseActivity.class);
     }
 
-    private void setupGlobalExceptionHandler() {
+    /*private void setupGlobalExceptionHandler() {
         UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
 
         if (defaultHandler == null) {
@@ -95,5 +95,5 @@ public class MainApplication extends MultiDexApplication { // fix: Didn't find c
 
             defaultHandler.uncaughtException(t, e);
         });
-    }
+    }*/
 }

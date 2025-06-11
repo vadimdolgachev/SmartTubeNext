@@ -400,7 +400,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
 
         String[] split = Helpers.splitData(data);
 
-        mIsCardAnimatedPreviewsEnabled = Helpers.parseBoolean(split, 0, true);
+        //mIsCardAnimatedPreviewsEnabled = Helpers.parseBoolean(split, 0, true);
         mVideoGridScale = Helpers.parseFloat(split, 1, 1.35f);
         mUIScale = Helpers.parseFloat(split, 2, 1.0f);
         mColorSchemeIndex = Helpers.parseInt(split, 3, 2);
