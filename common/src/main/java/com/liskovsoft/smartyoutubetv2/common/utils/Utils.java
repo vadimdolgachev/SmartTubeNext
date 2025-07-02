@@ -86,6 +86,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
+    private static final int RANDOM_FAIL_REPEAT_TIMES = 10;
     private static final String REMOTE_CONTROL_RECEIVER_CLASS_NAME = "com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlReceiver";
     private static final String UPDATE_CHANNELS_RECEIVER_CLASS_NAME = "com.liskovsoft.leanbackassistant.channels.UpdateChannelsReceiver";
     private static final String BOOTSTRAP_ACTIVITY_CLASS_NAME = "com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity";
@@ -570,13 +571,31 @@ public class Utils {
 
     @SuppressWarnings("deprecation")
     public static boolean isServiceRunning(Context context, Class<? extends Service> serviceClass) {
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+        List<RunningServiceInfo> services = getRunningServices(context);
+
+        if (services == null) {
+            return false;
+        }
+
+        for (RunningServiceInfo service : services) {
             if (serviceClass.getName().equals(service.service.getClassName())) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static List<RunningServiceInfo> getRunningServices(Context context) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+
+        try {
+            return manager.getRunningServices(Integer.MAX_VALUE);
+        } catch (NullPointerException e) {
+            // NullPointerException: Attempt to invoke interface method 'java.lang.Object android.os.Parcelable$Creator.createFromParcel(android.os.Parcel)' on a null object reference
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public static void cancelNotification(Context context, int notificationId) {
@@ -1072,5 +1091,22 @@ public class Utils {
         }
 
         return result.toString();
+    }
+
+    public static int getRandomIndex(int currentIdx, int playlistSize) {
+        if (playlistSize <= 1) {
+            return -1;
+        }
+
+        int randomIndex = -1;
+
+        for (int i = 0; i < RANDOM_FAIL_REPEAT_TIMES; i++) {
+            randomIndex = Helpers.getRandomIndex(playlistSize);
+            if (randomIndex != currentIdx) {
+                break;
+            }
+        }
+
+        return randomIndex;
     }
 }

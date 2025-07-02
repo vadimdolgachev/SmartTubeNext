@@ -28,7 +28,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
-import com.liskovsoft.smartyoutubetv2.common.utils.UniqueRandom;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
@@ -647,10 +646,6 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void findNextSectionVideoIfNeeded(Video video) {
-        if (!video.isSectionPlaylistEnabled(getContext())) {
-            return;
-        }
-
         if (getPlayerData().getPlaybackMode() == PlayerConstants.PLAYBACK_MODE_SHUFFLE) {
             findRandomSectionVideo(video);
         } else {
@@ -669,7 +664,7 @@ public class SuggestionsController extends BasePlayerController {
 
         int currentIdx = group.indexOf(video);
 
-        int nextIdx = UniqueRandom.getRandomIndex(currentIdx, group.getSize());
+        int nextIdx = Utils.getRandomIndex(currentIdx, group.getSize());
 
         mNextSectionVideo = group.get(nextIdx);
         getPlayer().setNextTitle(mNextSectionVideo);

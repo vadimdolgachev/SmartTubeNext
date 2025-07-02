@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
@@ -372,11 +373,16 @@ public class AppDialogUtil {
         // Alphabetical order
         Collections.sort(options, (o1, o2) -> ((String) o1.getTitle()).compareTo((String) o2.getTitle()));
 
-        for (int i = 0; i < lastLanguages.size(); i++) {
-            String languageCode = lastLanguages.get(i);
+        int idx = 0;
+
+        for (String languageCode : lastLanguages) {
+            if (TextUtils.isEmpty(languageCode)) { // original
+                continue;
+            }
+
             Locale locale = new Locale(languageCode);
 
-            options.add(i, UiOptionItem.from(locale.getDisplayLanguage(),
+            options.add(idx++, UiOptionItem.from(locale.getDisplayLanguage(),
                     optionItem -> {
                         playerData.setAudioLanguage(languageCode);
                         onSetCallback.run();
@@ -384,7 +390,7 @@ public class AppDialogUtil {
                     languageCode.equals(playerData.getAudioLanguage())));
         }
 
-        options.add(0, UiOptionItem.from(context.getString(R.string.default_lang),
+        options.add(0, UiOptionItem.from(context.getString(R.string.original_lang),
                 optionItem -> {
                     playerData.setAudioLanguage("");
                     onSetCallback.run();

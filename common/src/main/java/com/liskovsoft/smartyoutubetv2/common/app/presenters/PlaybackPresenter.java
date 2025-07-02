@@ -47,10 +47,9 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
         }
     };
     private WeakReference<Video> mVideo;
-    private Video mPendingVideo;
     // Fix for using destroyed view
     private WeakReference<PlaybackView> mPlayer = new WeakReference<>(null);
-    private long mNewVideoStartedTimeMs;
+    private boolean mIsEmbedPlayerStarted;
 
     private PlaybackPresenter(Context context) {
         super(context);
@@ -88,15 +87,6 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
     private void initControllers() {
         // Re-init after app exit
         process(PlayerEventListener::onInit);
-
-        if (mPendingVideo != null) {
-            onNewVideo(mPendingVideo);
-            mPendingVideo = null;
-        }
-    }
-
-    public boolean hasPendingVideo() {
-        return mPendingVideo != null;
     }
 
     public void openVideo(String videoId) {
@@ -122,20 +112,18 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
             return;
         }
 
-        if (getView() == null) {
-            mPendingVideo = video;
-        } else if (getView().isEmbed()) { // switching from the embed player to the fullscreen one
+        if (getView() != null && getView().isEmbed()) { // switching from the embed player to the fullscreen one
             // The embed player doesn't disposed properly
             // NOTE: don't release after init check because this depends on timings
             getView().finishReally();
             setView(null);
             getController(VideoStateController.class).saveState();
-            onNewVideo(video);
-        } else {
-            onNewVideo(video);
         }
 
+        onNewVideo(video);
+
         getViewManager().startView(PlaybackView.class);
+        mIsEmbedPlayerStarted = false;
     }
 
     public Video getVideo() {
@@ -210,7 +198,7 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
 
         // Fix playing the previous video when switching between embed and fullscreen players.
         // E.g. when the user pressed back on the Channel content screen
-        if (view != null && view.getVideo() != null && isNewVideoExpired()) {
+        if (view != null && view.getVideo() != null && mIsEmbedPlayerStarted) {
             mVideo = new WeakReference<>(view.getVideo());
             Playlist.instance().add(view.getVideo()); // don't show queue
         }
@@ -241,7 +229,7 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
     public void onNewVideo(Video video) {
         process(listener -> listener.onNewVideo(video));
         mVideo = new WeakReference<>(video);
-        mNewVideoStartedTimeMs = System.currentTimeMillis();
+        mIsEmbedPlayerStarted = true;
     }
 
     @Override
@@ -269,10 +257,6 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
 
     private void process(Processor<PlayerEventListener> processor) {
         Utils.process(mEventListeners, processor);
-    }
-
-    private boolean isNewVideoExpired() {
-        return System.currentTimeMillis() - mNewVideoStartedTimeMs > 1_000;
     }
 
     // End Helpers

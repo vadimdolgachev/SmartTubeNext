@@ -394,9 +394,13 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        // Check that channels new look enabled and we're on the first column
+        // Check that channels new look enabled and we're on the first columnAdd commentMore actions
         if (belongsToChannelUploadsMultiGrid(item)) {
-            updateChannelUploadsMultiGrid(item);
+            if (getMainUIData().isUploadsAutoLoadEnabled()) {
+                VideoActionPresenter.instance(getContext()).apply(item);
+            } else {
+                updateChannelUploadsMultiGrid(item);
+            }
         } else {
             VideoActionPresenter.instance(getContext()).apply(item);
         }
@@ -1097,7 +1101,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         getView().showProgressBar(false);
 
-        if (getView().isEmpty()) {
+        if (getView().isEmpty() || error != null) {
             ErrorFragmentData errorFragmentData;
             if (error != null && !Helpers.containsAny(error.getMessage(), "fromNullable result is null")) {
                 errorFragmentData = new CategoryEmptyError(getContext(), error);

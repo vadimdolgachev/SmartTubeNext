@@ -5,13 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.KeyCharacterMap.UnavailableException;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.Window;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -29,7 +27,6 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
-import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +136,9 @@ public class MotherActivity extends FragmentActivity {
 
         try {
             return super.dispatchKeyEvent(event);
-        } catch (IllegalStateException | SecurityException | UnavailableException e) {
+        } catch (NullPointerException | IllegalArgumentException | IllegalStateException | SecurityException | UnavailableException e) {
+            // NullPointerException: 'android.view.Window androidx.core.app.ComponentActivity.getWindow()' on a null object reference
+            // IllegalArgumentException: View is not a direct child of HorizontalGridView
             // Fatal Exception: java.lang.IllegalStateException
             // android.permission.RECORD_AUDIO required for search (Android 5 mostly)
             // Fatal Exception: java.lang.SecurityException
@@ -208,20 +207,19 @@ public class MotherActivity extends FragmentActivity {
         mScreensaverManager.disable();
     }
 
-    //@Override
-    //public void onWindowFocusChanged(boolean hasFocus) {
-    //    super.onWindowFocusChanged(hasFocus);
-    //
-    //    if (hasFocus) {
-    //        Helpers.makeActivityFullscreen2(this);
-    //    }
-    //}
-
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
 
         applyCustomConfig();
+
+        // Refresh metrics for new config (orientation, screen size, etc.)
+        //sCachedDisplayMetrics = null;
+        //
+        //DisplayMetrics updatedMetrics = getCustomDisplayMetrics(this);
+        //newConfig.densityDpi = (int)(updatedMetrics.density * 160);
+        //
+        //applyOverrideConfiguration(newConfig);
     }
 
     public ScreensaverManager getScreensaverManager() {
@@ -236,17 +234,22 @@ public class MotherActivity extends FragmentActivity {
     }
 
     private void initDpi() {
-        getResources().getDisplayMetrics().setTo(getDisplayMetrics());
+        getResources().getDisplayMetrics().setTo(getDisplayMetrics(this));
     }
 
-    private DisplayMetrics getDisplayMetrics() {
+    private static DisplayMetrics getDisplayMetrics(Context context) {
         // BUG: adapt to resolution change (e.g. on AFR)
         // Don't disable caching or you will experience weird sizes on cards in video suggestions (e.g. after exit from PIP)!
         if (sCachedDisplayMetrics == null) {
+            WindowManager wm = getWindowManager(context);
+            if (wm == null) {
+                return null;
+            }
             // NOTE: Don't replace with getResources().getDisplayMetrics(). Shows wrong metrics here!
+            //getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
             DisplayMetrics displayMetrics = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            float uiScale = MainUIData.instance(this).getUIScale();
+            wm.getDefaultDisplay().getMetrics(displayMetrics);
+            float uiScale = MainUIData.instance(context).getUIScale();
             // Take into the account screen orientation (e.g. when running on phone)
             int widthPixels = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
             float widthRatio = DEFAULT_WIDTH / widthPixels;
@@ -257,6 +260,15 @@ public class MotherActivity extends FragmentActivity {
         }
 
         return sCachedDisplayMetrics;
+    }
+
+    private static WindowManager getWindowManager(Context context) {
+        try {
+            return (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        } catch (IllegalStateException e) {
+            // IllegalStateException: System services not available to Activities before onCreate()
+        }
+        return null;
     }
 
     private void applyCustomConfig() {
@@ -375,6 +387,10 @@ public class MotherActivity extends FragmentActivity {
     public static void invalidate() {
         sCachedDisplayMetrics = null;
         sIsInPipMode = false;
+    }
+
+    public static DisplayMetrics getCachedDisplayMetrics() {
+        return sCachedDisplayMetrics;
     }
 
     /**
