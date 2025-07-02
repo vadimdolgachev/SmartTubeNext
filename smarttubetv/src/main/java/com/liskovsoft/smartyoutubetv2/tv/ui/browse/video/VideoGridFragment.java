@@ -8,6 +8,8 @@ import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
 import androidx.leanback.widget.RowPresenter;
 import androidx.leanback.widget.VerticalGridPresenter;
+
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
@@ -136,6 +138,27 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
 
     @Override
     public void update(VideoGroup group) {
+        int action = group.getAction();
+
+        // Attempt to fix: IllegalStateException: Cannot call this method while RecyclerView is computing a layout or scrolling
+        if ((action == VideoGroup.ACTION_SYNC || action == VideoGroup.ACTION_REPLACE) && getBrowseGrid() != null && getBrowseGrid().isComputingLayout()) {
+            return;
+        }
+
+        // Smooth remove animation
+        if (action == VideoGroup.ACTION_REMOVE || action == VideoGroup.ACTION_REMOVE_AUTHOR) {
+            updateInt(group);
+            return;
+        }
+
+        freeze(true);
+
+        updateInt(group);
+
+        freeze(false);
+    }
+
+    private void updateInt(VideoGroup group) {
         if (mGridAdapter == null) {
             mPendingUpdates.add(group);
             return;
@@ -160,11 +183,7 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
             return;
         }
 
-        freeze(true);
-
         mGridAdapter.add(group);
-
-        freeze(false);
 
         restorePosition();
     }
@@ -214,7 +233,7 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
             return mPendingUpdates.isEmpty();
         }
 
-        return mGridAdapter.size() == 0;
+        return mGridAdapter.isEmpty();
     }
 
     protected boolean isShorts() {

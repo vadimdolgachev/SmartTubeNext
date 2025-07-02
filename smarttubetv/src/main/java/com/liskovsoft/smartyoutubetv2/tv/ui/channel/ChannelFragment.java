@@ -48,14 +48,14 @@ public class ChannelFragment extends MultipleRowsFragment implements ChannelView
                 @Override
                 public String getChannelTitle() {
                     if (mChannelPresenter.getChannel() == null) {
-                        return null;
+                        return Helpers.startsWith(mChannelPresenter.getChannelId(), "@") ? mChannelPresenter.getChannelId() : null;
                     }
 
                     String author = mChannelPresenter.getChannel().getAuthor();
                     String title = mChannelPresenter.getChannel().getTitle();
                     String subs = mChannelPresenter.getChannel().subscriberCount;
 
-                    return YouTubeHelper.createInfo(Helpers.firstNonNull(author, title), subs);
+                    return Helpers.toString(YouTubeHelper.createInfo(Helpers.firstNonNull(author, title), subs));
                 }
             });
         }

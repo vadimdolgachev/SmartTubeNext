@@ -1,13 +1,29 @@
-# SmartTube (previously SmartTubeNext)
+# SmartTube
   
-<img width="100" src="https://github.com/yuliskov/SmartTube/blob/master/smarttubetv/src/ststable/res/mipmap-nodpi/app_icon.png" alt="logo"/>
+<!-- <img width="100" src="https://github.com/yuliskov/SmartTube/blob/master/smarttubetv/src/ststable/res/mipmap-nodpi/app_icon.png" alt="logo"/> -->
 
-**SmartTube** is an advanced player for **Android TVs** and **TV boxes**, free & open source. You can play content from different public sources.
+![The app screenshot](./images/browse_home.png)
 
-:white_check_mark: **Features**: no ads ‧ SponsorBlock ‧ adjustable playback speed ‧ 8k support ‧ 60fps ‧ HDR ‧ read live chat ‧ customizable buttons ‧ no Google Services ‧ helpful international community
+SmartTube is a free and open-source advanced media player for Android TVs and TV boxes. It allows you to play content from various public sources.
 
-:x: **Disadvantages**: no support for phones and tablets, no comments
-stability, voice search and casting support **might** be worse than in the official apps, depending on your device; give it a try!
+### ✅ Features
+- No ads  
+- SponsorBlock integration  
+- Adjustable playback speed  
+- 8K resolution support  
+- 60fps playback  
+- HDR compatibility  
+- View live chat  
+- Customizable buttons  
+- Does not require Google Services  
+- Helpful international community
+
+### ❌ Limitations
+- Not supported on phones and tablets  
+- Comment functionality is unstable  
+- Voice search and casting performance may be inferior to official apps, depending on your device  
+
+Give it a try!
 
 **Do you have any question?** Ctrl+F or ⌘F this readme first!
 
@@ -16,8 +32,10 @@ stability, voice search and casting support **might** be worse than in the offic
 
 ## Device support
 
-![:white_check_mark: supported: all Android TVs and TV boxes (incl. FireTV & NVIDIA Shield), even older ones with Android 4.3 (Kitkat). :x: not supported: Smartphones, non-Android plattforms like Samsung Tizen, LG webOS, iOS, etc.
+![:white_check_mark: supported: all Android TVs and TV boxes (incl. FireTV, NVIDIA Shield & Google Chromecast with Google TV), even older ones with Android 4.3 (Kitkat). :x: not supported: Smartphones, non-Android plattforms like Samsung Tizen, LG webOS, iOS, etc.
 ](images/new/upload_f6ab10668ea7793f099108f2b2230406.png)
+* **supported:** all Android TVs and TV boxes (incl. FireTV, NVIDIA Shield & Google Chromecast with Google TV), even older ones with Android 4.3 (Kitkat).
+* **not supported:** Smartphones, non-Android plattforms like Samsung Tizen, LG webOS, iOS, etc.
 
 
 ## Installation
@@ -343,6 +361,9 @@ A: Right, that's currently a bug.
 
 A: Please read the [Casting](#casting) section.
 
+### Q: I get an error saying "Sign in to confirm you're not a bot"
+
+A: Your IP address range might be temporaily/permanently blocked by YouTube from watching videos if you not signed in to your account.
 
 ### Q: The video is buffering a lot
 

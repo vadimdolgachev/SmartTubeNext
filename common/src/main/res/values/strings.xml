@@ -61,6 +61,7 @@
     <string name="dialog_remove_account">Sign out</string>
     <string name="dialog_add_account">Sign in</string>
     <string name="default_lang">Default</string>
+    <string name="original_lang">Original</string>
     <string name="dialog_select_language">Language</string>
     <string name="subtitle_default">Default</string>
     <string name="subtitle_white_semi_transparent">White on semitransparent background</string>
@@ -140,6 +141,7 @@
     <string name="open_channel_uploads">Open channel uploads</string>
     <string name="app_exit_shortcut">Exit from the app</string>
     <string name="player_exit_shortcut">Exit from the player</string>
+    <string name="search_exit_shortcut">Exit from the search</string>
     <string name="app_exit_none">Don\'t exit</string>
     <string name="app_double_back_exit">Double back</string>
     <string name="app_single_back_exit">Single back</string>
@@ -536,6 +538,7 @@
     <string name="loading">Loading…</string>
     <string name="hide_streams">Hide streams from Subscriptions</string>
     <string name="video_rotate">Rotate</string>
+    <string name="video_flip">Flip (mirror)</string>
     <string name="trending_searches">Trending searches</string>
     <string name="video_duration_any">Any</string>
     <string name="video_duration">Duration</string>
@@ -599,7 +602,7 @@
     <string name="content_block_exclude_channel">Exclude this channel from SponsorBlock</string>
     <string name="content_block_stop_excluding_channel">Stop excluding this channel from SponsorBlock</string>
     <string name="player_chapter_notification">Quick advance through the chapters using the popup notification</string>
-    <string name="subtitle_remember">Remember enabled subtitles per each channel</string>
+    <string name="subtitle_remember">Enable subtitles only on the current channel</string>
     <string name="amazon_frame_drop_fix">Frame drop fix #2</string>
     <string name="amazon_frame_drop_fix_desc">Intended for Amazon Stick devices. May work on other devices too.</string>
     <string name="default_stack_desc">Built-in network engine. This engine may have better stability in certain situations.</string>
@@ -634,7 +637,7 @@
     <string name="play_next">Play next</string>
     <string name="hide_watched_from_subscriptions">Hide watched videos from Subscriptions</string>
     <string name="hide_watched_from_notifications">Hide watched videos from Notifications</string>
-    <string name="hide_unwanted_content">Hide unwanted content</string>
+    <string name="hide_unwanted_content">Hide videos</string>
     <string name="hide_watched_from_home">Hide watched videos from Home</string>
     <string name="hide_watched_from_watch_later">Hide watched videos from Watch later playlist</string>
     <string name="remote_control_permission">Background Remote control requires Overlay permission</string>
@@ -676,7 +679,7 @@
     <string name="calm_msg">We are fixing the issue. Check for updates from time to time</string>
     <string name="without_picture">Without picture</string>
     <string name="video_disabled">Video disabled</string>
-    <string name="applying_fix">Don\'t close the player. Applying the fix...</string>
+    <string name="applying_fix">Don\'t close the player. Applying the fix…</string>
     <string name="hide_mixes">Hide Mixes</string>
     <string name="player_global_focus_desc">This feature affects which player button will receive focus when navigating between player button rows</string>
     <string name="disable_network_error_fixing">Disable automatic network error fixing</string>
@@ -695,4 +698,12 @@
     <string name="player_audio_focus">Audio focus (pause if other players detected)</string>
     <string name="paid_content_notification">Paid content notification</string>
     <string name="cancel">Cancel</string>
+    <string name="you_liked">you liked</string>
+    <string name="premium_users_only">Premium users only. Fix for incomplete video format list</string>
+    <string name="playback_buffering_fix">Playback buffering fix</string>
+    <string name="oculus_quest_fix">Oculus Quest fix</string>
+    <string name="card_preview_muted">Video without sound</string>
+    <string name="card_preview_full">Video with sound</string>
+    <string name="card_preview">Card preview</string>
+    <string name="card_unlocalized_titles">Unlocalized video titles</string>
 </resources>

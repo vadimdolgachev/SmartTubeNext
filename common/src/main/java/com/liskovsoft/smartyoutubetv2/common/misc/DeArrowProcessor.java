@@ -5,6 +5,7 @@ import android.content.Context;
 import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.prefs.DeArrowData;
@@ -23,6 +24,7 @@ public class DeArrowProcessor implements OnDataChange, BrowseProcessor {
     private final DeArrowData mDeArrowData;
     private boolean mIsReplaceTitlesEnabled;
     private boolean mIsReplaceThumbnailsEnabled;
+    private Disposable mResult;
 
     public DeArrowProcessor(Context context, OnItemReady onItemReady) {
         mOnItemReady = onItemReady;
@@ -50,7 +52,7 @@ public class DeArrowProcessor implements OnDataChange, BrowseProcessor {
         }
 
         List<String> videoIds = getVideoIds(videoGroup);
-        Disposable result = mItemService.getDeArrowDataObserve(videoIds)
+        mResult = mItemService.getDeArrowDataObserve(videoIds)
                 .subscribe(deArrowData -> {
                     Video video = videoGroup.findVideoById(deArrowData.getVideoId());
                     if (mIsReplaceTitlesEnabled) {
@@ -64,6 +66,11 @@ public class DeArrowProcessor implements OnDataChange, BrowseProcessor {
                 error -> {
                     Log.d(TAG, "DeArrow cannot process the video");
                 });
+    }
+
+    @Override
+    public void dispose() {
+        RxHelper.disposeActions(mResult);
     }
 
     private List<String> getVideoIds(VideoGroup videoGroup) {

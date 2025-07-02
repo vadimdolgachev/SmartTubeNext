@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
@@ -21,13 +22,14 @@ import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.VideoMenuCallback;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.channelgroup.ChannelGroupServiceWrapper;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
@@ -371,11 +373,16 @@ public class AppDialogUtil {
         // Alphabetical order
         Collections.sort(options, (o1, o2) -> ((String) o1.getTitle()).compareTo((String) o2.getTitle()));
 
-        for (int i = 0; i < lastLanguages.size(); i++) {
-            String languageCode = lastLanguages.get(i);
+        int idx = 0;
+
+        for (String languageCode : lastLanguages) {
+            if (TextUtils.isEmpty(languageCode)) { // original
+                continue;
+            }
+
             Locale locale = new Locale(languageCode);
 
-            options.add(i, UiOptionItem.from(locale.getDisplayLanguage(),
+            options.add(idx++, UiOptionItem.from(locale.getDisplayLanguage(),
                     optionItem -> {
                         playerData.setAudioLanguage(languageCode);
                         onSetCallback.run();
@@ -383,7 +390,7 @@ public class AppDialogUtil {
                     languageCode.equals(playerData.getAudioLanguage())));
         }
 
-        options.add(0, UiOptionItem.from(context.getString(R.string.default_lang),
+        options.add(0, UiOptionItem.from(context.getString(R.string.original_lang),
                 optionItem -> {
                     playerData.setAudioLanguage("");
                     onSetCallback.run();
@@ -443,13 +450,33 @@ public class AppDialogUtil {
         return OptionCategory.from(AUDIO_VOLUME_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
     }
 
-    public static OptionCategory createPitchEffectCategory(Context context, PlayerManager playerManager, PlayerData playerData) {
+    public static OptionCategory createPitchEffectCategory(Context context) {
         String title = context.getString(R.string.pitch_effect);
 
         List<OptionItem> options = new ArrayList<>();
 
-        for (int pitchRaw : Helpers.range(1, 20 * 4, 1)) {
-            float pitch = pitchRaw / (10f * 4);
+        //for (int pitchRaw : Helpers.range(1, 20 * 4, 1)) {
+        //    float pitch = pitchRaw / (10f * 4);
+        //    options.add(UiOptionItem.from(Helpers.toString(pitch),
+        //            optionItem -> {
+        //                playerManager.setPitch(pitch);
+        //                playerData.setPitch(pitch);
+        //            },
+        //            Helpers.floatEquals(pitch, playerManager.getPitch())));
+        //}
+
+        addPitches(context, options, Helpers.range(0.025f, 0.975f, 0.025f));
+        addPitches(context, options, new float[]{ 0.985f, 0.990f, 0.995f }); // Custom pitches
+        addPitches(context, options, Helpers.range(1f, 2f, 0.025f));
+
+        return OptionCategory.from(PITCH_EFFECT_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
+    }
+
+    private static void addPitches(Context context, List<OptionItem> options, float[] pitchList) {
+        PlayerManager playerManager = PlaybackPresenter.instance(context).getPlayer();
+        PlayerData playerData = PlayerData.instance(context);
+
+        for (float pitch : pitchList) {
             options.add(UiOptionItem.from(Helpers.toString(pitch),
                     optionItem -> {
                         playerManager.setPitch(pitch);
@@ -457,8 +484,6 @@ public class AppDialogUtil {
                     },
                     Helpers.floatEquals(pitch, playerManager.getPitch())));
         }
-
-        return OptionCategory.from(PITCH_EFFECT_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
     }
 
     public static OptionCategory createSubtitleStylesCategory(Context context) {
@@ -537,18 +562,18 @@ public class AppDialogUtil {
         List<OptionItem> options = new ArrayList<>();
 
         for (int[] pair : new int[][] {
-                {R.string.video_zoom_default, PlayerData.ZOOM_MODE_DEFAULT},
-                {R.string.video_zoom_fit_width, PlayerData.ZOOM_MODE_FIT_WIDTH},
-                {R.string.video_zoom_fit_height, PlayerData.ZOOM_MODE_FIT_HEIGHT},
-                {R.string.video_zoom_fit_both, PlayerData.ZOOM_MODE_FIT_BOTH},
-                {R.string.video_zoom_stretch, PlayerData.ZOOM_MODE_STRETCH}}) {
+                {R.string.video_zoom_default, PlayerData.RESIZE_MODE_DEFAULT},
+                {R.string.video_zoom_fit_width, PlayerData.RESIZE_MODE_FIT_WIDTH},
+                {R.string.video_zoom_fit_height, PlayerData.RESIZE_MODE_FIT_HEIGHT},
+                {R.string.video_zoom_fit_both, PlayerData.RESIZE_MODE_FIT_BOTH},
+                {R.string.video_zoom_stretch, PlayerData.RESIZE_MODE_STRETCH}}) {
             options.add(UiOptionItem.from(context.getString(pair[0]),
                     optionItem -> {
-                        playerData.setVideoZoomMode(pair[1]);
-                        playerData.setVideoZoom(-1);
+                        playerData.setResizeMode(pair[1]);
+                        playerData.setZoomPercents(-1);
                         onSelectZoomMode.run();
                     },
-                    playerData.getVideoZoomMode() == pair[1] && playerData.getVideoZoom() == -1));
+                    playerData.getResizeMode() == pair[1] && playerData.getZoomPercents() == -1));
         }
 
         // Zoom above 100% has centering problems with 2K-4K videos
@@ -562,11 +587,11 @@ public class AppDialogUtil {
             for (int zoomPercents : zoomRange) {
                 options.add(UiOptionItem.from(String.format("%s%%", zoomPercents),
                         optionItem -> {
-                            playerData.setVideoZoom(zoomPercents);
-                            playerData.setVideoZoomMode(PlayerData.ZOOM_MODE_DEFAULT);
+                            playerData.setZoomPercents(zoomPercents);
+                            playerData.setResizeMode(PlayerData.RESIZE_MODE_DEFAULT);
                             onSelectZoomMode.run();
                         },
-                        playerData.getVideoZoom() == zoomPercents));
+                        playerData.getZoomPercents() == zoomPercents));
             }
         }
 
@@ -594,9 +619,9 @@ public class AppDialogUtil {
         for (Entry<String, Float> entry: pairs.entrySet()) {
             options.add(UiOptionItem.from(entry.getKey(),
                     optionItem -> {
-                        playerData.setVideoAspectRatio(entry.getValue());
+                        playerData.setAspectRatio(entry.getValue());
                         onSelectAspectMode.run();
-                    }, Helpers.floatEquals(playerData.getVideoAspectRatio(), entry.getValue())));
+                    }, Helpers.floatEquals(playerData.getAspectRatio(), entry.getValue())));
         }
 
         String videoZoomTitle = context.getString(R.string.video_aspect);
@@ -610,9 +635,9 @@ public class AppDialogUtil {
         for (int angle : new int[] {0, 90, 180, 270}) {
             options.add(UiOptionItem.from(String.valueOf(angle),
                     optionItem -> {
-                        playerData.setVideoRotation(angle);
+                        playerData.setRotationAngle(angle);
                         onRotate.run();
-                    }, playerData.getVideoRotation() == angle));
+                    }, playerData.getRotationAngle() == angle));
         }
 
         String videoRotateTitle = context.getString(R.string.video_rotate);
@@ -782,20 +807,20 @@ public class AppDialogUtil {
         List<OptionItem> options = new ArrayList<>();
 
         for (int[] pair : new int[][] {
-                {R.string.repeat_mode_all, PlayerEngineConstants.REPEAT_MODE_ALL},
-                {R.string.repeat_mode_one, PlayerEngineConstants.REPEAT_MODE_ONE},
-                {R.string.repeat_mode_shuffle, PlayerEngineConstants.REPEAT_MODE_SHUFFLE},
-                {R.string.repeat_mode_pause_alt, PlayerEngineConstants.REPEAT_MODE_LIST},
-                {R.string.repeat_mode_reverse_list, PlayerEngineConstants.REPEAT_MODE_REVERSE_LIST},
-                {R.string.repeat_mode_pause, PlayerEngineConstants.REPEAT_MODE_PAUSE},
-                {R.string.repeat_mode_none, PlayerEngineConstants.REPEAT_MODE_CLOSE}
+                {R.string.repeat_mode_all, PlayerConstants.PLAYBACK_MODE_ALL},
+                {R.string.repeat_mode_one, PlayerConstants.PLAYBACK_MODE_ONE},
+                {R.string.repeat_mode_shuffle, PlayerConstants.PLAYBACK_MODE_SHUFFLE},
+                {R.string.repeat_mode_pause_alt, PlayerConstants.PLAYBACK_MODE_LIST},
+                {R.string.repeat_mode_reverse_list, PlayerConstants.PLAYBACK_MODE_REVERSE_LIST},
+                {R.string.repeat_mode_pause, PlayerConstants.PLAYBACK_MODE_PAUSE},
+                {R.string.repeat_mode_none, PlayerConstants.PLAYBACK_MODE_CLOSE}
         }) {
             options.add(UiOptionItem.from(context.getString(pair[0]),
                     optionItem -> {
-                        playerData.setRepeatMode(pair[1]);
+                        playerData.setPlaybackMode(pair[1]);
                         onModeSelected.run();
                     },
-                    playerData.getRepeatMode() == pair[1]
+                    playerData.getPlaybackMode() == pair[1]
             ));
         }
 

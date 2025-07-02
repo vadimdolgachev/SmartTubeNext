@@ -22,6 +22,7 @@ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
+import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -40,9 +41,9 @@ public final class Video {
     public int id;
     public String title;
     public String deArrowTitle;
-    public String secondTitle;
+    public CharSequence secondTitle;
     private String metadataTitle;
-    private String metadataSecondTitle;
+    private CharSequence metadataSecondTitle;
     public String description;
     public String category;
     public int itemType = -1;
@@ -64,7 +65,7 @@ public final class Video {
     public int startTimeSeconds;
     public MediaItem mediaItem;
     public MediaItem nextMediaItem;
-    public MediaItem nextMediaItemBackup;
+    public MediaItem shuffleMediaItem;
     public PlaylistInfo playlistInfo;
     public boolean hasNewContent;
     public boolean isLive;
@@ -93,6 +94,7 @@ public final class Video {
     public boolean deArrowProcessed;
     public boolean isLiveEnd;
     public boolean forceSectionPlaylist;
+    public boolean isShuffled;
     private int startSegmentNum;
     private long liveDurationMs = -1;
     private long durationMs = -1;
@@ -290,7 +292,7 @@ public final class Video {
         return deArrowTitle != null ? deArrowTitle : title;
     }
 
-    public String getSecondTitle() {
+    public CharSequence getSecondTitle() {
         return secondTitle;
     }
 
@@ -298,7 +300,7 @@ public final class Video {
         return deArrowTitle != null ? deArrowTitle : metadataTitle != null ? metadataTitle : title;
     }
 
-    public String getPlayerSubtitle() {
+    public CharSequence getPlayerSubtitle() {
         // Don't sync future translation because of not precise info
         return metadataSecondTitle != null && !isUpcoming ? metadataSecondTitle : secondTitle;
     }
@@ -316,8 +318,9 @@ public final class Video {
             return author;
         }
 
-        String subtitle = metadataSecondTitle != null ? metadataSecondTitle : secondTitle;
-        return hasVideo() ? extractAuthor(subtitle) : subtitle; // BAD idea
+        String mainTitle = metadataTitle != null ? metadataTitle : title;
+        CharSequence subtitle = metadataSecondTitle != null ? metadataSecondTitle : secondTitle;
+        return hasVideo() ? extractAuthor(subtitle) : Helpers.toString(YouTubeHelper.createInfo(mainTitle, subtitle)); // BAD idea
     }
 
     public VideoGroup getGroup() {
@@ -330,6 +333,10 @@ public final class Video {
 
     public int getPositionInsideGroup() {
         return getGroup() != null && !getGroup().isEmpty() ? getGroup().getVideos().indexOf(this) : -1;
+    }
+
+    private static String extractAuthor(CharSequence secondTitle) {
+        return extractAuthor(Helpers.toString(secondTitle));
     }
 
     private static String extractAuthor(String secondTitle) {
@@ -680,6 +687,10 @@ public final class Video {
             return;
         }
 
+        if (isLive && !metadata.isLive()) {
+            isLiveEnd = true;
+        }
+
         //// NOTE: Skip upcoming (no media) because default title more informative (e.g. has scheduled time).
         //// NOTE: Upcoming videos metadata wrongly reported as live
         //if (!isUpcoming) {
@@ -706,6 +717,7 @@ public final class Video {
         }
         channelId = metadata.getChannelId();
         nextMediaItem = findNextVideo(metadata);
+        shuffleMediaItem = metadata.getShuffleVideo();
         playlistInfo = metadata.getPlaylistInfo();
         isSubscribed = metadata.isSubscribed();
         likeCount = metadata.getLikeCount();
@@ -776,6 +788,8 @@ public final class Video {
         video.isLive = isLive;
         video.isUpcoming = isUpcoming;
         video.nextMediaItem = nextMediaItem;
+        video.shuffleMediaItem = shuffleMediaItem;
+        video.durationMs = durationMs;
 
         if (getGroup() != null) {
             video.setGroup(getGroup().copy()); // Needed for proper multi row fragments sync (row id == group id)
@@ -841,7 +855,7 @@ public final class Video {
 
     public long getPositionMs() {
         long positionMs = getPositionFromStartPosition();
-        return positionMs != 0 ? positionMs : getPositionFromPercentWatched();
+        return positionMs > 0 ? positionMs : getPositionFromPercentWatched();
     }
 
     private long getPositionFromPercentWatched() {
@@ -859,7 +873,7 @@ public final class Video {
     }
 
     public MediaItem toMediaItem() {
-        return SampleMediaItem.from(this);
+        return SimpleMediaItem.from(this);
     }
 
     public void sync(VideoStateService.State state) {
@@ -873,5 +887,31 @@ public final class Video {
                 (playlistId == null || PLAYLIST_LIKED_MUSIC.equals(playlistId) || nextMediaItem == null || forceSectionPlaylist ||
                         (!isMix() && !belongsToSamePlaylistGroup())) && // skip hidden playlists (music videos usually)
                     (!isRemote || remotePlaylistId == null);
+    }
+
+    public String createPlaylistTitle() {
+        if (!hasPlaylist()) {
+            return null;
+        }
+        
+        // Trying to properly format channel playlists, mixes etc
+        boolean isChannelPlaylistItem = getGroupTitle() != null && belongsToSameAuthorGroup() && belongsToSamePlaylistGroup();
+        boolean isUserPlaylistItem = getGroupTitle() != null && belongsToSamePlaylistGroup();
+        String title = isChannelPlaylistItem ? getAuthor() : isUserPlaylistItem ? null : getTitle();
+        String subtitle = isChannelPlaylistItem || isUserPlaylistItem || belongsToUserPlaylists() ? getGroupTitle() : getAuthor();
+        return title != null && subtitle != null ? String.format("%s - %s", title, subtitle) : String.format("%s", title != null ? title : subtitle);
+    }
+
+    public String createChannelTitle() {
+        if (!hasReloadPageKey() && !hasChannel()) {
+            return null;
+        }
+        
+        // Trying to properly format channel playlists, mixes etc
+        boolean hasChannel = hasChannel() && !isChannel();
+        boolean isUserPlaylistItem = getGroupTitle() != null && belongsToSamePlaylistGroup();
+        String title = hasChannel ? getAuthor() : isUserPlaylistItem ? null : getTitle();
+        String subtitle = isUserPlaylistItem ? getGroupTitle() : hasChannel || isChannel() ? null : getAuthor();
+        return title != null && subtitle != null ? String.format("%s - %s", title, subtitle) : String.format("%s", title != null ? title : subtitle);
     }
 }

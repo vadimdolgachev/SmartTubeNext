@@ -3,7 +3,6 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import com.liskovsoft.mediaserviceinterfaces.ContentService;
-import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.SearchOptions;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -20,13 +19,10 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionP
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.VideoGroupPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SearchView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
-import com.liskovsoft.smartyoutubetv2.common.misc.DeArrowProcessor;
+import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
-import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
-import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.disposables.Disposable;
 
 import java.util.ArrayList;
@@ -36,10 +32,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
     private static final String TAG = SearchPresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static SearchPresenter sInstance;
-    private final ServiceManager mService;
-    private final ViewManager mViewManager;
-    private final SearchData mSearchData;
-    private final DeArrowProcessor mDeArrowProcessor;
+    private final BrowseProcessorManager mBrowseProcessor;
     private Disposable mScrollAction;
     private Disposable mLoadAction;
     private String mSearchText;
@@ -53,10 +46,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
 
     private SearchPresenter(Context context) {
         super(context);
-        mService = YouTubeServiceManager.instance();
-        mViewManager = ViewManager.instance(context);
-        mSearchData = SearchData.instance(context);
-        mDeArrowProcessor = new DeArrowProcessor(getContext(), this::syncItem);
+        mBrowseProcessor = new BrowseProcessorManager(getContext(), this::syncItem);
     }
 
     public static SearchPresenter instance(Context context) {
@@ -76,7 +66,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
             return;
         }
 
-        getView().setTagsProvider(new MediaServiceSearchTagProvider(mSearchData.isSearchHistoryDisabled()));
+        getView().setTagsProvider(new MediaServiceSearchTagProvider(getSearchData().isSearchHistoryDisabled()));
 
         startSearchInt();
     }
@@ -161,7 +151,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
         disposeActions();
         getView().showProgressBar(true);
 
-        ContentService contentService = mService.getContentService();
+        ContentService contentService = getContentService();
 
         getView().clearSearch();
 
@@ -183,7 +173,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
         disposeActions();
         getView().showProgressBar(true);
 
-        ContentService contentService = mService.getContentService();
+        ContentService contentService = getContentService();
 
         getView().clearSearch();
 
@@ -196,7 +186,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                                 VideoGroup group = VideoGroup.from(mediaGroup);
                                 startPlayFirstVideo(group);
                                 getView().updateSearch(group);
-                                mDeArrowProcessor.process(group);
+                                mBrowseProcessor.process(group);
                             }
                         },
                         error -> {
@@ -228,14 +218,14 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
 
         MediaGroup mediaGroup = group.getMediaGroup();
 
-        ContentService contentService = mService.getContentService();
+        ContentService contentService = getContentService();
 
         mScrollAction = contentService.continueGroupObserve(mediaGroup)
                 .subscribe(
                         continueMediaGroup -> {
                             VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup);
                             getView().updateSearch(newGroup);
-                            mDeArrowProcessor.process(newGroup);
+                            mBrowseProcessor.process(newGroup);
                         },
                         error -> {
                             Log.e(TAG, "continueGroup error: %s", error.getMessage());
@@ -287,7 +277,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
         mIsVoice = isVoice;
         mStartPlay = startPlay;
 
-        mViewManager.startView(SearchView.class);
+        getViewManager().startView(SearchView.class);
         startSearchInt();
     }
 
@@ -296,7 +286,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
             return;
         }
 
-        if ((mIsVoice || mSearchData.isInstantVoiceSearchEnabled()) && mSearchText == null) {
+        if ((mIsVoice || getSearchData().isInstantVoiceSearchEnabled()) && mSearchText == null) {
             getView().startVoiceRecognition();
         } else {
             getView().startSearch(mSearchText);
@@ -316,9 +306,10 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
         if (getView() != null) {
             getView().showProgressBar(false);
         }
-        if (mSearchData.isSearchHistoryDisabled()) {
+        if (getSearchData().isSearchHistoryDisabled()) {
             MediaServiceManager.instance().clearSearchHistory();
         }
+        mBrowseProcessor.dispose();
     }
 
     private void showSettingsDialog() {

@@ -61,7 +61,7 @@ public class VideoGroup {
     }
 
     public static VideoGroup from(Video item, int groupPosition) {
-        return from(Collections.singletonList(item), groupPosition);
+        return from(new ArrayList<>(Collections.singletonList(item)), groupPosition);
     }
 
     public static VideoGroup from(List<Video> items) {
@@ -93,11 +93,12 @@ public class VideoGroup {
         VideoGroup videoGroup = new VideoGroup();
         videoGroup.mSection = section;
         videoGroup.mPosition = groupPosition;
-        videoGroup.mId = videoGroup.hashCode();
         videoGroup.mVideos = new ArrayList<>();
         videoGroup.mMediaGroup = mediaGroup;
         videoGroup.mTitle = mediaGroup != null && mediaGroup.getTitle() != null ?
                 mediaGroup.getTitle() : section != null ? section.getTitle() : null;
+        // Fix duplicated rows e.g. Shorts
+        videoGroup.mId = videoGroup.mTitle != null ? videoGroup.mTitle.hashCode() : videoGroup.hashCode();
 
         if (mediaGroup == null) {
             return videoGroup;

@@ -17,6 +17,7 @@ import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemFormatInfo;
 import com.liskovsoft.youtubeapi.videoinfo.V2.VideoInfoService;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.formats.AdaptiveVideoFormat;
+import com.liskovsoft.youtubeapi.videoinfo.models.formats.VideoFormat;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -97,9 +98,9 @@ public class UrlProvider extends ContentProvider {
                 formats = formats.stream()
                         .filter(adaptiveVideoFormat -> !adaptiveVideoFormat.getMimeType().contains("av01"))
                         .filter(adaptiveVideoFormat -> {
-                            if (adaptiveVideoFormat.getSize() != null) {
-                                final int width = Integer.parseInt(adaptiveVideoFormat.getSize().split("x")[0]);
-                                final int height = Integer.parseInt(adaptiveVideoFormat.getSize().split("x")[1]);
+                            if (getSize(adaptiveVideoFormat) != null) {
+                                final int width = Integer.parseInt(getSize(adaptiveVideoFormat).split("x")[0]);
+                                final int height = Integer.parseInt(getSize(adaptiveVideoFormat).split("x")[1]);
                                 final boolean isVerticalVideo = 1.0 * width / height <= 1.0;
                                 final boolean isVp9Codec = adaptiveVideoFormat.getMimeType().contains("vp9");
                                 // skip vp9 and vertical
@@ -129,10 +130,10 @@ public class UrlProvider extends ContentProvider {
                         .collect(Collectors.toList());
             }
             for (AdaptiveVideoFormat format : formats) {
-                Log.d(TAG, "format size=" + format.getSize()
+                Log.d(TAG, "format size=" + getSize(format)
                         + ", btr=" + format.getBitrate()
                         + ", codec=" + format.getMimeType()
-                        + ", res=" + format.getSize()
+                        + ", res=" + getSize(format)
                         + ", url=" + format.getUrl());
                 if (format.getMimeType().startsWith("video") && videoUrl == null) {
                     videoUrl = format.getUrl();
@@ -161,5 +162,9 @@ public class UrlProvider extends ContentProvider {
                       String[] selectionArgs) {
         // TODO: Implement this to handle requests to update one or more rows.
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    private String getSize(VideoFormat format){
+        return String.format("%sx%s", format.getWidth(), format.getHeight());
     }
 }
