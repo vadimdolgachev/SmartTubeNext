@@ -387,8 +387,8 @@ public class VideoLoaderController extends BasePlayerController {
 
             if (formatInfo.isBotCheckError()) {
                 YouTubeServiceManager.instance().applyNoPlaybackFix();
-                YouTubeServiceManager.instance().applyAntiBotFix();
-                getPlayerTweaksData().enablePersistentAntiBotFix(true);
+                //YouTubeServiceManager.instance().applyAntiBotFix();
+                //getPlayerTweaksData().enablePersistentAntiBotFix(true);
                 scheduleReloadVideoTimer(5_000);
             } else {scheduleNextVideoTimer(5_000);
             if (!mIsWasVideoStartError) {
