@@ -97,9 +97,9 @@ public class UrlProvider extends ContentProvider {
                 formats = formats.stream()
                         .filter(adaptiveVideoFormat -> !adaptiveVideoFormat.getMimeType().contains("av01"))
                         .filter(adaptiveVideoFormat -> {
-                            if (adaptiveVideoFormat.getSize() != null) {
-                                final int width = Integer.parseInt(adaptiveVideoFormat.getSize().split("x")[0]);
-                                final int height = Integer.parseInt(adaptiveVideoFormat.getSize().split("x")[1]);
+                            final int width = adaptiveVideoFormat.getWidth();
+                            final int height = adaptiveVideoFormat.getHeight();
+                            if (width != -1 && height != -1) {
                                 final boolean isVerticalVideo = 1.0 * width / height <= 1.0;
                                 final boolean isVp9Codec = adaptiveVideoFormat.getMimeType().contains("vp9");
                                 // skip vp9 and vertical
@@ -129,10 +129,10 @@ public class UrlProvider extends ContentProvider {
                         .collect(Collectors.toList());
             }
             for (AdaptiveVideoFormat format : formats) {
-                Log.d(TAG, "format size=" + format.getSize()
+                Log.d(TAG, "format: width=" + format.getWidth()
+                        + ", heigh=" + format.getHeight()
                         + ", btr=" + format.getBitrate()
                         + ", codec=" + format.getMimeType()
-                        + ", res=" + format.getSize()
                         + ", url=" + format.getUrl());
                 if (format.getMimeType().startsWith("video") && videoUrl == null) {
                     videoUrl = format.getUrl();

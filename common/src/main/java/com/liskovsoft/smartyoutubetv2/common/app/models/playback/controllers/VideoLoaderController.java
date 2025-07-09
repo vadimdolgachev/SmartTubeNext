@@ -168,9 +168,9 @@ public class VideoLoaderController extends BasePlayerController {
 
         mLastErrorType = type;
         runEngineErrorAction(type, rendererIndex, error);
-        if (!mIsWasVideoStartError && mLastVideo != null) {
-            Analytics.sendVideoStartError(mLastVideo.videoId,
-                    mLastVideo.title,
+        if (!mIsWasVideoStartError && getVideo() != null) {
+            Analytics.sendVideoStartError(getVideo().videoId,
+                    getVideo().title,
                     error.getMessage());
             mIsWasVideoStartError = true;
         }
@@ -375,8 +375,8 @@ public class VideoLoaderController extends BasePlayerController {
                 scheduleRebootAppTimer(5_000);
             } else {// 18+ video or the video is hidden/removedscheduleNextVideoTimer(5_000);
             if (!mIsWasVideoStartError) {
-                Analytics.sendVideoStartError(mLastVideo.videoId,
-                        mLastVideo.title,
+                Analytics.sendVideoStartError(getVideo().videoId,
+                        getVideo().title,
                         formatInfo.getPlayabilityStatus());
                 mIsWasVideoStartError = true;
             }
@@ -415,8 +415,8 @@ public class VideoLoaderController extends BasePlayerController {
             bgImageUrl = getVideo().getBackgroundUrl();
             scheduleReloadVideoTimer(30 * 1_000);
             if (!mIsWasVideoStartError) {
-                Analytics.sendVideoStartError(mLastVideo.videoId,
-                        mLastVideo.title,
+                Analytics.sendVideoStartError(getVideo().videoId,
+                        getVideo().title,
                         formatInfo.getPlayabilityStatus());
                 mIsWasVideoStartError = true;
             }
@@ -518,9 +518,9 @@ public class VideoLoaderController extends BasePlayerController {
             Log.e(TAG, "Probably no internet connection");
             scheduleReloadVideoTimer(1_000);
         }
-        if (!mIsWasVideoStartError) {
-            Analytics.sendVideoStartError(video.videoId,
-                    video.title,
+        if (!mIsWasVideoStartError && getVideo() != null) {
+            Analytics.sendVideoStartError(getVideo().videoId,
+                    getVideo().title,
                     error.getMessage());
             mIsWasVideoStartError = true;
         }
@@ -839,8 +839,8 @@ public class VideoLoaderController extends BasePlayerController {
     @Override
     public void onPlay() {
         Utils.removeCallbacks(mOnLongBuffering);
-        if (!mIsWasStarted && mLastVideo != null) {
-            Analytics.sendVideoStarted(mLastVideo.videoId, mLastVideo.title);
+        if (!mIsWasStarted && getVideo() != null) {
+            Analytics.sendVideoStarted(getVideo().videoId, getVideo().title);
             mIsWasStarted = true;
         }
     }
