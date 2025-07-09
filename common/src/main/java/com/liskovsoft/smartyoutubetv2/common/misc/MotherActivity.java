@@ -5,14 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
-import android.os.Build;
+import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.KeyCharacterMap.UnavailableException;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.Window;
-import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,10 +22,11 @@ import com.liskovsoft.sharedutils.locale.LocaleUpdater;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
-import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,9 +110,10 @@ public class MotherActivity extends FragmentActivity {
 
         try {
             return super.dispatchTouchEvent(event);
-        } catch (NullPointerException | SecurityException e) {
+        } catch (NullPointerException | SecurityException | IllegalStateException | ArrayIndexOutOfBoundsException e) {
             // Attempt to invoke interface method 'boolean android.app.trust.ITrustManager.isDeviceLocked(int)' on a null object reference
             // Permission Denial: starting Intent
+            // IllegalStateException: exitFreeformMode: You can only go fullscreen from freeform.
             e.printStackTrace();
             return false;
         }
@@ -136,7 +136,9 @@ public class MotherActivity extends FragmentActivity {
 
         try {
             return super.dispatchKeyEvent(event);
-        } catch (IllegalStateException | SecurityException | UnavailableException e) {
+        } catch (NullPointerException | IllegalArgumentException | IllegalStateException | SecurityException | UnavailableException e) {
+            // NullPointerException: 'android.view.Window androidx.core.app.ComponentActivity.getWindow()' on a null object reference
+            // IllegalArgumentException: View is not a direct child of HorizontalGridView
             // Fatal Exception: java.lang.IllegalStateException
             // android.permission.RECORD_AUDIO required for search (Android 5 mostly)
             // Fatal Exception: java.lang.SecurityException
@@ -161,7 +163,11 @@ public class MotherActivity extends FragmentActivity {
 
     public void finishReally() {
         try {
-            super.finish();
+            if (VERSION.SDK_INT >= 21) {
+                super.finishAndRemoveTask();
+            } else {
+                super.finish();
+            }
         } catch (Exception e) {
             // TextView not attached to window manager (IllegalArgumentException)
         }
@@ -172,7 +178,8 @@ public class MotherActivity extends FragmentActivity {
         Context contextWrapper = null;
 
         if (context != null) {
-            contextWrapper = LocaleContextWrapper.wrap(context, LocaleUpdater.getSavedLocale(context));
+            // NOTE: Use only cached metrics. Because metrics creation involves using WindowManager, which isn't available at this stage.
+            contextWrapper = LocaleContextWrapper.wrap(context, LocaleUpdater.getSavedLocale(context), sCachedDisplayMetrics);
         }
 
         super.attachBaseContext(contextWrapper);
@@ -205,15 +212,6 @@ public class MotherActivity extends FragmentActivity {
         mScreensaverManager.disable();
     }
 
-    //@Override
-    //public void onWindowFocusChanged(boolean hasFocus) {
-    //    super.onWindowFocusChanged(hasFocus);
-    //
-    //    if (hasFocus) {
-    //        Helpers.makeActivityFullscreen2(this);
-    //    }
-    //}
-
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -233,17 +231,17 @@ public class MotherActivity extends FragmentActivity {
     }
 
     private void initDpi() {
-        getResources().getDisplayMetrics().setTo(getDisplayMetrics());
+        getResources().getDisplayMetrics().setTo(getDisplayMetrics(this));
     }
 
-    private DisplayMetrics getDisplayMetrics() {
+    private DisplayMetrics getDisplayMetrics(Context context) {
         // BUG: adapt to resolution change (e.g. on AFR)
         // Don't disable caching or you will experience weird sizes on cards in video suggestions (e.g. after exit from PIP)!
         if (sCachedDisplayMetrics == null) {
             // NOTE: Don't replace with getResources().getDisplayMetrics(). Shows wrong metrics here!
             DisplayMetrics displayMetrics = new DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            float uiScale = MainUIData.instance(this).getUIScale();
+            float uiScale = MainUIData.instance(context).getUIScale();
             // Take into the account screen orientation (e.g. when running on phone)
             int widthPixels = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
             float widthRatio = DEFAULT_WIDTH / widthPixels;
@@ -374,6 +372,10 @@ public class MotherActivity extends FragmentActivity {
         sIsInPipMode = false;
     }
 
+    public static DisplayMetrics getCachedDisplayMetrics() {
+        return sCachedDisplayMetrics;
+    }
+
     /**
      * Comments focus fix<br/>
      * https://stackoverflow.com/questions/34277425/recyclerview-items-lose-focus
@@ -408,4 +410,20 @@ public class MotherActivity extends FragmentActivity {
     //        super.setTheme(R.style.FitSystemWindows);
     //    }
     //}
+
+    protected ViewManager getViewManager() {
+        return ViewManager.instance(this);
+    }
+
+    protected GeneralData getGeneralData() {
+        return GeneralData.instance(this);
+    }
+
+    protected PlayerTweaksData getPlayerTweaksData() {
+        return PlayerTweaksData.instance(this);
+    }
+
+    protected PlayerData getPlayerData() {
+        return PlayerData.instance(this);
+    }
 }

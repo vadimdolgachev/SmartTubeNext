@@ -13,13 +13,14 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.SubtitleManager.SubtitleStyle;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.ExoFormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.MediaTrack;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PlayerData extends DataChangeBase implements PlayerEngineConstants, ProfileChangeListener {
+public class PlayerData extends DataChangeBase implements PlayerConstants, ProfileChangeListener {
     private static final String VIDEO_PLAYER_DATA = "video_player_data";
     public static final int ONLY_UI = 0;
     public static final int UI_AND_PAUSE = 1;
@@ -55,10 +56,11 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private final List<SubtitleStyle> mSubtitleStyles = new ArrayList<>();
     private final Map<String, FormatItem> mDefaultVideoFormats = new HashMap<>();
     private int mSubtitleStyleIndex;
-    private int mVideoZoomMode;
-    private int mVideoZoom;
-    private float mVideoAspectRatio;
-    private int mVideoRotation;
+    private int mResizeMode;
+    private int mZoomPercents;
+    private float mAspectRatio;
+    private int mRotationAngle;
+    private boolean mIsVideoFlipEnabled;
     private int mSeekPreviewMode;
     private float mSpeed;
     private float mLastSpeed;
@@ -70,7 +72,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private String mAudioLanguage;
     private String mSubtitleLanguage;
     private boolean mIsAllSpeedEnabled;
-    private int mRepeatMode;
+    private int mPlaybackMode;
     private boolean mIsSonyTimerFixEnabled;
     private boolean mIsQualityInfoEnabled;
     private boolean mIsSpeedPerVideoEnabled;
@@ -96,6 +98,8 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private float mPitch;
     private long mAfrSwitchTimeMs;
     private List<String> mLastAudioLanguages;
+    private final Runnable mPersistStateInt = this::persistStateInt;
+    private boolean mIsLegacyCodecsForced;
 
     private static class SpeedItem {
         public String channelId;
@@ -247,13 +251,13 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         return mBackgroundMode;
     }
 
-    public void setRepeatMode(int mode) {
-        mRepeatMode = mode;
+    public void setPlaybackMode(int mode) {
+        mPlaybackMode = mode;
         persistState();
     }
 
-    public int getRepeatMode() {
-        return mRepeatMode;
+    public int getPlaybackMode() {
+        return mPlaybackMode;
     }
 
     public boolean isAllSpeedEnabled() {
@@ -279,12 +283,12 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     }
 
     public boolean isLegacyCodecsForced() {
-        return MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_URL) && !MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_DASH);
+        return mIsLegacyCodecsForced;
     }
 
-    public void forceLegacyCodecs(boolean enable) {
-        MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_URL, enable);
-        MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_DASH, !enable);
+    public void forceLegacyCodecs(boolean forced) {
+        mIsLegacyCodecsForced = forced;
+        persistState();
     }
 
     public boolean isAfrEnabled() {
@@ -502,40 +506,49 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         persistState();
     }
 
-    public void setVideoZoomMode(int mode) {
-        mVideoZoomMode = mode;
+    public void setResizeMode(int mode) {
+        mResizeMode = mode;
         persistState();
     }
 
-    public int getVideoZoomMode() {
-        return mVideoZoomMode;
+    public int getResizeMode() {
+        return mResizeMode;
     }
 
-    public void setVideoZoom(int percents) {
-        mVideoZoom = percents;
+    public void setZoomPercents(int percents) {
+        mZoomPercents = percents;
         persistState();
     }
 
-    public int getVideoZoom() {
-        return mVideoZoom;
+    public int getZoomPercents() {
+        return mZoomPercents;
     }
 
-    public void setVideoAspectRatio(float ratio) {
-        mVideoAspectRatio = ratio;
+    public void setAspectRatio(float ratio) {
+        mAspectRatio = ratio;
         persistState();
     }
 
-    public float getVideoAspectRatio() {
-        return mVideoAspectRatio;
+    public float getAspectRatio() {
+        return mAspectRatio;
     }
 
-    public void setVideoRotation(int angle) {
-        mVideoRotation = angle;
+    public void setRotationAngle(int angle) {
+        mRotationAngle = angle;
         persistState();
     }
 
-    public int getVideoRotation() {
-        return mVideoRotation;
+    public int getRotationAngle() {
+        return mRotationAngle;
+    }
+
+    public void setVideoFlipEnabled(boolean enabled) {
+        mIsVideoFlipEnabled = enabled;
+        persistState();
+    }
+
+    public boolean isVideoFlipEnabled() {
+        return mIsVideoFlipEnabled;
     }
 
     public void setSpeed(float speed) {
@@ -747,7 +760,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mSubtitleStyles.add(new SubtitleStyle(R.string.subtitle_yellow_semi_transparent, R.color.yellow, R.color.semi_transparent, CaptionStyleCompat.EDGE_TYPE_OUTLINE));
         mSubtitleStyles.add(new SubtitleStyle(R.string.subtitle_yellow_black, R.color.yellow, R.color.black, CaptionStyleCompat.EDGE_TYPE_OUTLINE));
 
-        if (Build.VERSION.SDK_INT >= 19) {
+        if (VERSION.SDK_INT >= 19) {
             mSubtitleStyles.add(new SubtitleStyle(R.string.subtitle_system));
         }
     }
@@ -785,7 +798,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 11)), getDefaultSubtitleFormat());
         mVideoBufferType = Helpers.parseInt(split, 12, PlayerEngine.BUFFER_MEDIUM);
         mSubtitleStyleIndex = Helpers.parseInt(split, 13, 4); // yellow on semi bg
-        mVideoZoomMode = Helpers.parseInt(split, 14, PlayerEngine.ZOOM_MODE_DEFAULT);
+        mResizeMode = Helpers.parseInt(split, 14, PlayerEngine.RESIZE_MODE_DEFAULT);
         mSpeed = Helpers.parseFloat(split, 15, 1.0f);
         mIsAfrEnabled = Helpers.parseBoolean(split, 16, false);
         mIsAfrFpsCorrectionEnabled = Helpers.parseBoolean(split, 17, true);
@@ -795,12 +808,12 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mIsAllSpeedEnabled = Helpers.parseBoolean(split, 21, false);
         // repeat mode was here
         // didn't remember what was there
-        // mIsLegacyCodecsForced
+        mIsLegacyCodecsForced = Helpers.parseBoolean(split, 24, false);
         mIsSonyTimerFixEnabled = Helpers.parseBoolean(split, 25, false);
         // old player tweaks
         mIsQualityInfoEnabled = Helpers.parseBoolean(split, 28, true);
         mIsSpeedPerVideoEnabled = Helpers.parseBoolean(split, 29, false);
-        mVideoAspectRatio = Helpers.parseFloat(split, 30, PlayerEngine.ASPECT_RATIO_DEFAULT);
+        mAspectRatio = Helpers.parseFloat(split, 30, PlayerEngine.ASPECT_RATIO_DEFAULT);
         mIsGlobalClockEnabled = Helpers.parseBoolean(split, 31, false);
         mIsTimeCorrectionEnabled = Helpers.parseBoolean(split, 32, true);
         mIsGlobalEndingTimeEnabled = Helpers.parseBoolean(split, 33, false);
@@ -820,9 +833,9 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mLastSubtitleFormats = Helpers.parseList(split, 47, ExoFormatItem::from);
         //mLastSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 47)), FormatItem.SUBTITLE_NONE);
         mLastSpeed = Helpers.parseFloat(split, 48, 1.0f);
-        mVideoRotation = Helpers.parseInt(split, 49, 0);
-        mVideoZoom = Helpers.parseInt(split, 50, -1);
-        mRepeatMode = Helpers.parseInt(split, 51, PlayerEngineConstants.REPEAT_MODE_ALL);
+        mRotationAngle = Helpers.parseInt(split, 49, 0);
+        mZoomPercents = Helpers.parseInt(split, 50, -1);
+        mPlaybackMode = Helpers.parseInt(split, 51, PlayerConstants.PLAYBACK_MODE_ALL);
         mAudioLanguage = Helpers.parseStr(split, 52, LocaleUtility.getCurrentLanguage(mPrefs.getContext()));
         mSubtitleLanguage = Helpers.parseStr(split, 53, LocaleUtility.getCurrentLanguage(mPrefs.getContext()));
         //String enabledSubtitles = Helpers.parseStr(split, 54);
@@ -833,6 +846,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mPitch = Helpers.parseFloat(split, 58, 1.0f);
         mIsSkipShortsEnabled = Helpers.parseBoolean(split, 59, false);
         mLastAudioLanguages = Helpers.parseStrList(split, 60);
+        mIsVideoFlipEnabled = Helpers.parseBoolean(split, 61, false);
 
         if (speeds != null) {
             for (String speedSpec : speeds) {
@@ -847,26 +861,32 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     }
 
     private void persistState() {
+        onDataChange();
+        Utils.postDelayed(mPersistStateInt, 10_000);
+    }
+
+    private void persistStateInt() {
         mPrefs.setProfileData(VIDEO_PLAYER_DATA, Helpers.mergeData(mOKButtonBehavior, mUiHideTimeoutSec, null,
                 mSeekPreviewMode, mIsSeekConfirmPauseEnabled,
                 mIsClockEnabled, mIsRemainingTimeEnabled, mBackgroundMode, null, // afrData was there
                 mVideoFormat, mAudioFormat, mSubtitleFormat,
-                mVideoBufferType, mSubtitleStyleIndex, mVideoZoomMode, mSpeed,
+                mVideoBufferType, mSubtitleStyleIndex, mResizeMode, mSpeed,
                 mIsAfrEnabled, mIsAfrFpsCorrectionEnabled, mIsAfrResSwitchEnabled, null, mAudioDelayMs, mIsAllSpeedEnabled, null, null,
-                null, mIsSonyTimerFixEnabled, null, null, // old player tweaks
-                mIsQualityInfoEnabled, mIsSpeedPerVideoEnabled, mVideoAspectRatio, mIsGlobalClockEnabled, mIsTimeCorrectionEnabled,
+                mIsLegacyCodecsForced, mIsSonyTimerFixEnabled, null, null, // old player tweaks
+                mIsQualityInfoEnabled, mIsSpeedPerVideoEnabled, mAspectRatio, mIsGlobalClockEnabled, mIsTimeCorrectionEnabled,
                 mIsGlobalEndingTimeEnabled, mIsEndingTimeEnabled, mIsDoubleRefreshRateEnabled, mIsSeekConfirmPlayEnabled,
                 mStartSeekIncrementMs, null, mSubtitleScale, mPlayerVolume, mIsTooltipsEnabled, mSubtitlePosition, mIsNumberKeySeekEnabled,
-                mIsSkip24RateEnabled, mAfrPauseMs, mIsLiveChatEnabled, mLastSubtitleFormats, mLastSpeed, mVideoRotation,
-                mVideoZoom, mRepeatMode, mAudioLanguage, mSubtitleLanguage, mEnabledSubtitlesPerChannel, mIsSubtitlesPerChannelEnabled,
-                mIsSpeedPerChannelEnabled, Helpers.mergeArray(mSpeeds.values().toArray()), mPitch, mIsSkipShortsEnabled, mLastAudioLanguages
+                mIsSkip24RateEnabled, mAfrPauseMs, mIsLiveChatEnabled, mLastSubtitleFormats, mLastSpeed, mRotationAngle, mZoomPercents, mPlaybackMode, mAudioLanguage, mSubtitleLanguage, mEnabledSubtitlesPerChannel, mIsSubtitlesPerChannelEnabled,
+                mIsSpeedPerChannelEnabled, Helpers.mergeArray(mSpeeds.values().toArray()), mPitch, mIsSkipShortsEnabled, mLastAudioLanguages, mIsVideoFlipEnabled
         ));
 
-        onDataChange();
+        //onDataChange();
     }
 
     @Override
     public void onProfileChanged() {
+        Utils.removeCallbacks(mPersistStateInt);
+
         // reset on profile change
         mSpeeds.clear();
 

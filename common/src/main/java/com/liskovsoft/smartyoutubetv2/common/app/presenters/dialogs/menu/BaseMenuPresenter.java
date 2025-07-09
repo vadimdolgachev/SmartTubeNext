@@ -11,7 +11,6 @@ import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
@@ -61,42 +60,24 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
     }
 
     protected void appendTogglePinVideoToSidebarButton() {
-        appendTogglePinPlaylistButton();
-        appendTogglePinChannelButton();
-    }
-
-    private void appendTogglePinPlaylistButton() {
         if (!mIsPinToSidebarEnabled) {
             return;
         }
 
         Video original = getVideo();
 
-        if (original == null || !original.hasPlaylist()) {
+        if (original == null || (!original.hasPlaylist() && !original.hasVideo() && !original.hasReloadPageKey() && !original.hasChannel())) {
             return;
         }
 
-        getDialogPresenter().appendSingleButton(
-                UiOptionItem.from(getContext().getString(R.string.pin_playlist),
-                        optionItem -> togglePinToSidebar(createPinnedPlaylist(original))));
-    }
-
-    private void appendTogglePinChannelButton() {
-        if (!mIsPinToSidebarEnabled) {
-            return;
-        }
-
-        Video original = getVideo();
-
-        if (original == null || (!original.hasVideo() && !original.hasReloadPageKey() && !original.hasChannel())) {
-            return;
-        }
-
+        boolean isPlaylist = original.hasPlaylist() || original.isPlaylistAsChannel() || (original.hasNestedItems() && original.belongsToUserPlaylists());
         getDialogPresenter().appendSingleButton(
                 UiOptionItem.from(
-                        getContext().getString(original.isPlaylistAsChannel() || (original.hasNestedItems() && original.belongsToUserPlaylists()) ? R.string.pin_playlist : R.string.pin_channel),
+                        getContext().getString(isPlaylist ? R.string.pin_playlist : R.string.pin_channel),
                         optionItem -> {
-                            if (original.hasVideo()) {
+                            if (original.hasPlaylist()) {
+                                togglePinToSidebar(createPinnedPlaylist(original));
+                            } else if (original.hasVideo()) {
                                 MessageHelpers.showMessage(getContext(), R.string.wait_data_loading);
 
                                 mServiceManager.loadMetadata(
@@ -113,7 +94,7 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
                         }));
     }
     
-    protected void togglePinToSidebar(Video section) {
+    private void togglePinToSidebar(Video section) {
         BrowsePresenter presenter = BrowsePresenter.instance(getContext());
 
         // Toggle between pin/unpin while dialog is opened
@@ -129,36 +110,26 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
         }
     }
 
-    private Video createPinnedPlaylist(Video video) {
-        if (video == null || !video.hasPlaylist()) {
+    private static Video createPinnedPlaylist(Video video) {
+        if (video == null) {
             return null;
         }
 
         Video section = Video.from(video);
         section.videoId = section.channelId = section.reloadPageKey = null; // reset to proper comparison
-        // Trying to properly format channel playlists, mixes etc
-        boolean isChannelPlaylistItem = video.getGroupTitle() != null && video.belongsToSameAuthorGroup() && video.belongsToSamePlaylistGroup();
-        boolean isUserPlaylistItem = video.getGroupTitle() != null && video.belongsToSamePlaylistGroup();
-        String title = isChannelPlaylistItem ? video.getAuthor() : isUserPlaylistItem ? null : video.getTitle();
-        String subtitle = isChannelPlaylistItem || isUserPlaylistItem ? video.getGroupTitle() : video.getAuthor();
-        section.title = title != null && subtitle != null ? String.format("%s - %s", title, subtitle) : String.format("%s", title != null ? title : subtitle);
+        section.title = video.createPlaylistTitle();
 
         return section;
     }
 
-    private Video createPinnedChannel(Video video) {
-        if (video == null || (!video.hasReloadPageKey() && !video.hasChannel() && !video.isChannel())) {
+    private static Video createPinnedChannel(Video video) {
+        if (video == null) {
             return null;
         }
 
         Video section = Video.from(video);
         section.videoId = section.playlistId = section.playlistParams = null; // reset to proper comparison
-        // Trying to properly format channel playlists, mixes etc
-        boolean hasChannel = video.hasChannel() && !video.isChannel();
-        boolean isUserPlaylistItem = video.getGroupTitle() != null && video.belongsToSamePlaylistGroup();
-        String title = hasChannel ? video.getAuthor() : isUserPlaylistItem ? null : video.getTitle();
-        String subtitle = isUserPlaylistItem ? video.getGroupTitle() : hasChannel || video.isChannel() ? null : video.getAuthor();
-        section.title = title != null && subtitle != null ? String.format("%s - %s", title, subtitle) : String.format("%s", title != null ? title : subtitle);
+        section.title = video.createChannelTitle();
 
         return section;
     }
@@ -523,7 +494,7 @@ public abstract class BaseMenuPresenter extends BasePresenter<Void> {
                         optionItem -> AppDialogUtil.showConfirmationDialog(getContext(),
                                 getContext().getString(R.string.clear_history), () -> {
                                     mServiceManager.clearHistory();
-                                    VideoStateService.instance(getContext()).clear();
+                                    //VideoStateService.instance(getContext()).clear();
                                     getDialogPresenter().closeDialog();
                                     presenter.refresh();
                         })));

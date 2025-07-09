@@ -5,6 +5,9 @@ import android.os.Build;
 import androidx.multidex.MultiDexApplication;
 
 import com.liskovsoft.sharedutils.Analytics;
+import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AddDeviceView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AppDialogView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
@@ -25,6 +28,8 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.signin.SignInActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.webbrowser.WebBrowserActivity;
+
+import java.lang.Thread.UncaughtExceptionHandler;
 
 import org.conscrypt.Conscrypt;
 
@@ -53,6 +58,7 @@ public class MainApplication extends MultiDexApplication { // fix: Didn't find c
         }
 
         Analytics.init(getApplicationContext());
+        //setupGlobalExceptionHandler();
         setupViewManager();
     }
 
@@ -70,5 +76,30 @@ public class MainApplication extends MultiDexApplication { // fix: Didn't find c
         viewManager.register(ChannelView.class, ChannelActivity.class, BrowseActivity.class);
         viewManager.register(ChannelUploadsView.class, ChannelUploadsActivity.class, BrowseActivity.class);
         viewManager.register(WebBrowserView.class, WebBrowserActivity.class, BrowseActivity.class);
+    }
+
+    private void setupGlobalExceptionHandler() {
+        UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+
+        if (defaultHandler == null) {
+            return;
+        }
+
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            if (Helpers.equalsAny(e.getMessage(),
+                    "parameter must be a descendant of this view",
+                    "Attempt to invoke virtual method 'android.view.ViewGroup$LayoutParams android.view.View.getLayoutParams()' on a null object reference")) {
+                Class<?> view = ViewManager.instance(getApplicationContext()).getTopView();
+                BrowseSection section = null;
+
+                if (view == BrowseView.class) {
+                    section = BrowsePresenter.instance(getApplicationContext()).getCurrentSection();
+                }
+
+                e = new RuntimeException("A crash in the view " + view.getSimpleName() + ", section id " + (section != null ? section.getId() : "-1"), e);
+            }
+
+            defaultHandler.uncaughtException(t, e);
+        });
     }
 }

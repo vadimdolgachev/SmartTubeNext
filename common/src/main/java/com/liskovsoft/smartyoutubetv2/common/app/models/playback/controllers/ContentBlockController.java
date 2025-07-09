@@ -20,6 +20,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.ContentBlockSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ContentBlockData;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
@@ -34,14 +35,13 @@ public class ContentBlockController extends BasePlayerController {
     private static final long POLL_INTERVAL_MS = 1_000;
     private static final int CONTENT_BLOCK_ID = 144;
     private MediaItemService mMediaItemService;
-    private ContentBlockData mContentBlockData;
-    private Video mVideo;
     private List<SponsorSegment> mOriginalSegments;
     private List<SponsorSegment> mActiveSegments;
     private long mLastSkipPosMs;
     private boolean mSkipExclude;
     private Disposable mSegmentsAction;
     private Observable<List<SponsorSegment>> mCachedSegmentsAction;
+    private String mVideoId;
 
     public static class SegmentAction {
         public String segmentCategory;
@@ -83,7 +83,6 @@ public class ContentBlockController extends BasePlayerController {
     public void onInit() {
         ServiceManager service = YouTubeServiceManager.instance();
         mMediaItemService = service.getMediaItemService();
-        mContentBlockData = ContentBlockData.instance(getContext());
     }
 
     @Override
@@ -98,7 +97,11 @@ public class ContentBlockController extends BasePlayerController {
     public void onVideoLoaded(Video item) {
         disposeActions();
 
-        boolean enabled = mContentBlockData.isSponsorBlockEnabled() && checkVideo(item) && !isChannelExcluded(item.channelId);
+        if (getPlayer() == null) {
+            return;
+        }
+
+        boolean enabled = getContentBlockData().isSponsorBlockEnabled() && checkVideo(item) && !isChannelExcluded(item.channelId);
         getPlayer().setButtonState(R.id.action_content_block, enabled ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
 
         if (enabled) {
@@ -110,7 +113,7 @@ public class ContentBlockController extends BasePlayerController {
     public void onMetadata(MediaItemMetadata metadata) {
         // Disable sponsor for the live streams.
         // Fix when using remote control.
-        if (!mContentBlockData.isSponsorBlockEnabled() || !checkVideo(getPlayer().getVideo())) {
+        if (!getContentBlockData().isSponsorBlockEnabled() || !checkVideo(getPlayer().getVideo())) {
             disposeActions();
         } else if (isChannelExcluded(metadata.getChannelId())) { // got channel id. check the exclusions
             getPlayer().setButtonState(R.id.action_content_block, PlayerUI.BUTTON_OFF);
@@ -153,18 +156,18 @@ public class ContentBlockController extends BasePlayerController {
     }
 
     private void updateSponsorSegmentsAndWatch(Video item) {
-        if (item == null || item.videoId == null || item.isLive || mContentBlockData.getEnabledCategories().isEmpty()) {
+        if (item == null || item.videoId == null || item.isLive || getContentBlockData().getEnabledCategories().isEmpty()) {
             mActiveSegments = mOriginalSegments = null;
             mCachedSegmentsAction = null;
             return;
         }
 
-        if (!item.equals(mVideo) || mCachedSegmentsAction == null) {
+        if (!Helpers.equals(mVideoId, item.videoId) || mCachedSegmentsAction == null) {
             // NOTE: SponsorBlock (when happened java.net.SocketTimeoutException) could block whole application with Schedulers.io()
             // Because Schedulers.io() reuses blocked threads in RxJava 2: https://github.com/ReactiveX/RxJava/issues/6542
-            mCachedSegmentsAction = mMediaItemService.getSponsorSegmentsObserve(item.videoId, mContentBlockData.getEnabledCategories())
+            mCachedSegmentsAction = mMediaItemService.getSponsorSegmentsObserve(item.videoId, getContentBlockData().getEnabledCategories())
                     .cache();
-            mVideo = item;
+            mVideoId = item.videoId;
         }
 
         mSegmentsAction = mCachedSegmentsAction
@@ -185,10 +188,10 @@ public class ContentBlockController extends BasePlayerController {
 
         mActiveSegments = new ArrayList<>(segments);
 
-        if (mContentBlockData.isColorMarkersEnabled()) {
+        if (getContentBlockData().isColorMarkersEnabled()) {
             getPlayer().setSeekBarSegments(toSeekBarSegments(segments));
         }
-        if (mContentBlockData.isActionsEnabled()) {
+        if (getContentBlockData().isActionsEnabled()) {
             // Warn. Try to not access player object here.
             // Or you'll get "Player is accessed on the wrong thread" error.
             return RxHelper.interval(POLL_INTERVAL_MS, TimeUnit.MILLISECONDS);
@@ -208,7 +211,7 @@ public class ContentBlockController extends BasePlayerController {
     }
 
     private void skipSegment(long interval) {
-        if (mActiveSegments == null || mActiveSegments.isEmpty() || !Video.equals(mVideo, getPlayer().getVideo())) {
+        if (mActiveSegments == null || mActiveSegments.isEmpty() || getVideo() == null || !Helpers.equals(mVideoId, getVideo().videoId)) {
             disposeActions();
             return;
         }
@@ -225,7 +228,7 @@ public class ContentBlockController extends BasePlayerController {
         applyActions(foundSegments);
 
         // Skip each segment only once
-        if (foundSegments != null && mContentBlockData.isDontSkipSegmentAgainEnabled()) {
+        if (foundSegments != null && getContentBlockData().isDontSkipSegmentAgainEnabled()) {
             mActiveSegments.removeAll(foundSegments);
         }
     }
@@ -304,7 +307,7 @@ public class ContentBlockController extends BasePlayerController {
         List<SeekBarSegment> result = new ArrayList<>();
 
         for (SponsorSegment sponsorSegment : segments) {
-            if (!mContentBlockData.isColorMarkerEnabled(sponsorSegment.getCategory())) {
+            if (!getContentBlockData().isColorMarkerEnabled(sponsorSegment.getCategory())) {
                 continue;
             }
 
@@ -313,7 +316,7 @@ public class ContentBlockController extends BasePlayerController {
             float endRatio = (float) sponsorSegment.getEndMs() / getPlayer().getDurationMs(); // Range: [0, 1]
             seekBarSegment.startProgress = startRatio;
             seekBarSegment.endProgress = endRatio;
-            seekBarSegment.color = ContextCompat.getColor(getContext(), mContentBlockData.getColorRes(sponsorSegment.getCategory()));
+            seekBarSegment.color = ContextCompat.getColor(getContext(), getContentBlockData().getColorRes(sponsorSegment.getCategory()));
             result.add(seekBarSegment);
         }
 
@@ -341,7 +344,7 @@ public class ContentBlockController extends BasePlayerController {
         List<SponsorSegment> foundSegment = null;
 
         for (SponsorSegment segment : segments) {
-            int action = mContentBlockData.getAction(segment.getCategory());
+            int action = getContentBlockData().getAction(segment.getCategory());
             boolean isSkipAction = action == ContentBlockData.ACTION_SKIP_ONLY ||
                     action == ContentBlockData.ACTION_SKIP_WITH_TOAST;
             if (foundSegment == null) {
@@ -366,17 +369,25 @@ public class ContentBlockController extends BasePlayerController {
     }
 
     private void applyActions(List<SponsorSegment> foundSegments) {
-        if (foundSegments != null) {
-            SponsorSegment lastSegment = foundSegments.get(foundSegments.size() - 1);
+        if (foundSegments == null) {
+            mLastSkipPosMs = 0;
+            return;
+        }
 
-            Integer resId = mContentBlockData.getLocalizedRes(lastSegment.getCategory());
-            String skipMessage = resId != null ? getContext().getString(resId) : lastSegment.getCategory();
+        SponsorSegment lastSegment = foundSegments.get(foundSegments.size() - 1);
 
-            int type = mContentBlockData.getAction(lastSegment.getCategory());
+        Integer resId = getContentBlockData().getLocalizedRes(lastSegment.getCategory());
+        String skipMessage = resId != null ? getContext().getString(resId) : lastSegment.getCategory();
 
-            long skipPosMs = lastSegment.getEndMs();
+        int type = getContentBlockData().getAction(lastSegment.getCategory());
 
-            if (type == ContentBlockData.ACTION_SKIP_ONLY || getPlayer().isInPIPMode() || Utils.isScreenOff(getContext())) {
+        long skipPosMs = lastSegment.getEndMs();
+        // Fix infinite skip loop by ignoring short segments. TextureView has a seek bug.
+        long skipDurationMs = Math.min(skipPosMs, getPlayer().getDurationMs()) - getPlayer().getPositionMs();
+        boolean stayQuiet = skipDurationMs < 10_000 && PlayerTweaksData.instance(getContext()).isTextureViewEnabled();
+
+        if (!stayQuiet) {
+            if (type == ContentBlockData.ACTION_SKIP_ONLY || getPlayer().isInPIPMode() || Utils.isScreenOff(getContext()) || isEmbedPlayer()) {
                 simpleSkip(skipPosMs);
             } else if (type == ContentBlockData.ACTION_SKIP_WITH_TOAST) {
                 messageSkip(skipPosMs, skipMessage);
@@ -385,7 +396,7 @@ public class ContentBlockController extends BasePlayerController {
             }
         }
 
-        mLastSkipPosMs = foundSegments != null ? foundSegments.get(foundSegments.size() - 1).getEndMs() : 0;
+        mLastSkipPosMs = skipPosMs;
     }
 
     private void closeTransparentDialog() {
@@ -397,6 +408,6 @@ public class ContentBlockController extends BasePlayerController {
     }
 
     private boolean isChannelExcluded(String channelId) {
-        return !mSkipExclude && mContentBlockData.isChannelExcluded(channelId);
+        return !mSkipExclude && getContentBlockData().isChannelExcluded(channelId);
     }
 }

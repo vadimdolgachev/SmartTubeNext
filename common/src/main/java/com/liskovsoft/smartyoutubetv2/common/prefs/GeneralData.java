@@ -7,6 +7,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ public class GeneralData implements ProfileChangeListener {
     private final AppPrefs mPrefs;
     private int mAppExitShortcut;
     private int mPlayerExitShortcut;
+    private int mSearchExitShortcut;
     private boolean mIsReturnToLauncherEnabled;
     private int mBackgroundShortcut;
     private boolean mIsHideShortsFromSubscriptionsEnabled;
@@ -85,6 +87,7 @@ public class GeneralData implements ProfileChangeListener {
     private boolean mIsDeviceSpecificBackupEnabled;
     private boolean mIsAutoBackupEnabled;
     private List<Video> mOldPinnedItems;
+    private final Runnable mPersistStateInt = this::persistStateInt;
 
     private GeneralData(Context context) {
         mContext = context;
@@ -116,6 +119,15 @@ public class GeneralData implements ProfileChangeListener {
 
     public void setPlayerExitShortcut(int type) {
         mPlayerExitShortcut = type;
+        persistState();
+    }
+
+    public int getSearchExitShortcut() {
+        return mSearchExitShortcut;
+    }
+
+    public void setSearchExitShortcut(int type) {
+        mSearchExitShortcut = type;
         persistState();
     }
 
@@ -725,7 +737,7 @@ public class GeneralData implements ProfileChangeListener {
         mScreensaverDimmingPercents = Helpers.parseInt(split, 44, 80);
         mIsRemapNextToSpeedEnabled = Helpers.parseBoolean(split, 45, false);
         mIsRemapPlayToOKEnabled = Helpers.parseBoolean(split, 46, false);
-        mHistoryState = Helpers.parseInt(split, 47, HISTORY_ENABLED);
+        mHistoryState = Helpers.parseInt(split, 47, HISTORY_AUTO);
         mRememberSubscriptionsPosition = Helpers.parseBoolean(split, 48, false);
         // mSelectedSubscriptionsItem was here
         mIsRemapNumbersToSpeedEnabled = Helpers.parseBoolean(split, 50, false);
@@ -747,9 +759,14 @@ public class GeneralData implements ProfileChangeListener {
         mIsDeviceSpecificBackupEnabled = Helpers.parseBoolean(split, 65, false);
         mIsAutoBackupEnabled = Helpers.parseBoolean(split, 66, false);
         mIsRemapPageDownToSpeedEnabled = Helpers.parseBoolean(split, 67, false);
+        mSearchExitShortcut = Helpers.parseInt(split, 68, EXIT_SINGLE_BACK);
     }
 
     private void persistState() {
+        Utils.postDelayed(mPersistStateInt, 10_000);
+    }
+
+    private void persistStateInt() {
         // Zero index is skipped. Selected sections were there.
         mPrefs.setProfileData(GENERAL_DATA, Helpers.mergeData(null, null, null, mAppExitShortcut, mIsReturnToLauncherEnabled,
                 mBackgroundShortcut, mOldPinnedItems, mIsHideShortsFromSubscriptionsEnabled,
@@ -765,11 +782,12 @@ public class GeneralData implements ProfileChangeListener {
                 mIsRemapDpadUpToVolumeEnabled, mIsRemapDpadLeftToVolumeEnabled, mIsRemapNextToFastForwardEnabled, mIsHideWatchedFromNotificationsEnabled,
                 mChangelog, mPlayerExitShortcut, null, mIsFullscreenModeEnabled, null,
                 mRememberPinnedPosition, mSelectedItems, mIsFirstUseTooltipEnabled, mIsDeviceSpecificBackupEnabled, mIsAutoBackupEnabled,
-                mIsRemapPageDownToSpeedEnabled));
+                mIsRemapPageDownToSpeedEnabled, mSearchExitShortcut));
     }
 
     @Override
     public void onProfileChanged() {
+        Utils.removeCallbacks(mPersistStateInt);
         restoreState();
     }
 }

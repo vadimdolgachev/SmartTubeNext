@@ -3,7 +3,7 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.data;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 
-public final class SampleMediaItem implements MediaItem {
+public final class SimpleMediaItem implements MediaItem {
     private int mId;
     private String mVideoId;
     private String mPlaylistId;
@@ -12,7 +12,7 @@ public final class SampleMediaItem implements MediaItem {
     private String mChannelId;
     private String mCardImageUrl;
     private String mParams;
-    private String mSecondTitle;
+    private CharSequence mSecondTitle;
     private String mContentType;
     private int mType;
     private String mVideoUrl;
@@ -29,11 +29,11 @@ public final class SampleMediaItem implements MediaItem {
     private boolean mIsMovie;
     private String mClickTrackingParams;
 
-    private SampleMediaItem() {
+    private SimpleMediaItem() {
     }
 
     public static MediaItem from(MediaItemMetadata metadata) {
-        SampleMediaItem mediaItem = new SampleMediaItem();
+        SimpleMediaItem mediaItem = new SimpleMediaItem();
 
         mediaItem.mTitle = metadata.getTitle();
         mediaItem.mSecondTitle = metadata.getSecondTitle();
@@ -48,7 +48,7 @@ public final class SampleMediaItem implements MediaItem {
     }
 
     public static MediaItem from(Video video) {
-        SampleMediaItem mediaItem = new SampleMediaItem();
+        SimpleMediaItem mediaItem = new SimpleMediaItem();
 
         mediaItem.mId = video.id;
         mediaItem.mTitle = video.getTitle();
@@ -164,7 +164,7 @@ public final class SampleMediaItem implements MediaItem {
     }
 
     @Override
-    public String getSecondTitle() {
+    public CharSequence getSecondTitle() {
         return mSecondTitle;
     }
 

@@ -28,6 +28,13 @@ public abstract class AbstractCommentsReceiver implements CommentsReceiver {
     }
 
     @Override
+    public void sync(CommentItem commentItem) {
+        if (mCallback != null) {
+            mCallback.onSync(commentItem);
+        }
+    }
+
+    @Override
     public void setCallback(Callback callback) {
         mCallback = callback;
     }
@@ -40,6 +47,11 @@ public abstract class AbstractCommentsReceiver implements CommentsReceiver {
     @Override
     public void onCommentClicked(CommentItem commentItem) {
 
+    }
+
+    @Override
+    public void onCommentLongClicked(CommentItem commentItem) {
+        
     }
 
     @Override

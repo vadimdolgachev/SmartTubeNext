@@ -16,13 +16,18 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.mediaserviceinterfaces.data.NotificationState;
 import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
+import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import io.reactivex.Observable;
@@ -32,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MediaServiceManager implements OnAccountChange {
     private static final String TAG = MediaServiceManager.class.getSimpleName();
@@ -196,6 +202,10 @@ public class MediaServiceManager implements OnAccountChange {
     }
 
     public void loadChannelRows(Video item, OnMediaGroupList onMediaGroupList) {
+        loadChannelRows(item, onMediaGroupList, null);
+    }
+
+    public void loadChannelRows(Video item, OnMediaGroupList onMediaGroupList, OnError onError) {
         if (item == null) {
             return;
         }
@@ -208,7 +218,12 @@ public class MediaServiceManager implements OnAccountChange {
         mRowsAction = observable
                 .subscribe(
                         onMediaGroupList::onMediaGroupList,
-                        error -> Log.e(TAG, "loadChannelRows error: %s", error.getMessage())
+                        error -> {
+                            Log.e(TAG, "loadChannelRows error: %s", error.getMessage());
+                            if (onError != null) {
+                                onError.onError(error);
+                            }
+                        }
                 );
     }
 
@@ -366,7 +381,7 @@ public class MediaServiceManager implements OnAccountChange {
     }
 
     public void updateHistory(Video video, long positionMs) {
-        if (video == null) {
+        if (video == null || RxHelper.isAnyActionRunning(mHistoryAction)) {
             return;
         }
 
@@ -452,5 +467,48 @@ public class MediaServiceManager implements OnAccountChange {
         for (AccountChangeListener listener : mAccountListeners) {
             listener.onAccountChanged(account);
         }
+    }
+
+    /**
+     * Selecting right presenter for the channel.<br/>
+     * Channels could be of two types: regular (usr channel) and playlist channel (contains single row, try search: 'Mon mix')
+     */
+    public static void chooseChannelPresenter(Context context, Video item) {
+        if (item.hasVideo() || item.hasReloadPageKey()) { // an channel item from Channels section
+            ChannelPresenter.instance(context).openChannel(item);
+            return;
+        }
+
+        LoadingManager.showLoading(context, true);
+
+        AtomicInteger atomicIndex = new AtomicInteger(0);
+
+        MediaServiceManager.instance().loadChannelRows(item, groups -> {
+            LoadingManager.showLoading(context, false);
+
+            if (groups == null || groups.isEmpty()) {
+                return;
+            }
+
+            MediaGroup firstGroup = groups.get(0);
+            int type = firstGroup.getType();
+
+            if (type == MediaGroup.TYPE_CHANNEL_UPLOADS) {
+                if (atomicIndex.incrementAndGet() == 1) {
+                    ChannelUploadsPresenter.instance(context).clear();
+                }
+                // NOTE: Crashes RecycleView IndexOutOfBoundsException when doing add immediately after clear
+                Utils.postDelayed(() -> ChannelUploadsPresenter.instance(context).update(firstGroup), 100);
+            } else if (type == MediaGroup.TYPE_CHANNEL) {
+                if (atomicIndex.incrementAndGet() == 1) {
+                    ChannelPresenter.instance(context).clear();
+                    ChannelPresenter.instance(context).setChannel(item);
+                }
+                // NOTE: Crashes RecycleView IndexOutOfBoundsException when doing add immediately after clear
+                Utils.postDelayed(() -> ChannelPresenter.instance(context).updateRows(groups), 100);
+            } else {
+                MessageHelpers.showMessage(context, "Unknown type of channel");
+            }
+        }, error -> LoadingManager.showLoading(context, false));
     }
 }

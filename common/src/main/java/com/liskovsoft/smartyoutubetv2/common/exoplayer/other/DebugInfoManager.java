@@ -2,7 +2,9 @@ package com.liskovsoft.smartyoutubetv2.common.exoplayer.other;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.graphics.Color;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Build.VERSION;
 import android.util.TypedValue;
 import android.view.Display;
@@ -25,15 +27,19 @@ import com.google.android.exoplayer2.mediacodec.MediaCodecInfo;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
-import com.liskovsoft.sharedutils.helpers.DeviceHelpers;
 import com.liskovsoft.sharedutils.helpers.FileHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.sharedutils.querystringparser.UrlQueryStringFactory;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.internal.DisplayHolder.Mode;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.internal.UhdHelper;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.ExoUtils;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+import com.liskovsoft.youtubeapi.app.models.AppInfo;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
+
 import org.chromium.net.ApiVersion;
 
 import java.util.ArrayList;
@@ -200,6 +206,8 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
         appendDeviceNameSDKCache();
         appendMemoryInfo();
         appendWebViewInfo();
+        appendVideoInfoType();
+        appendVideoInfoVersion();
 
         // Schedule next update
         mDebugViewGroup.removeCallbacks(this);
@@ -379,7 +387,22 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
     }
 
     private void appendWebViewInfo() {
-        appendRow("WebView supported", DeviceHelpers.supportsWebView());
+        appendRow("WebView supported", MediaServiceData.instance().supportsWebView());
+    }
+
+    private void appendVideoInfoType() {
+        Pair<Integer, Boolean> videoInfoType = MediaServiceData.instance().getVideoInfoType();
+        appendRow("Video info type", videoInfoType != null ? videoInfoType.first : -1);
+    }
+
+    private void appendVideoInfoVersion() {
+        AppInfo appInfo = Helpers.firstNonNull(MediaServiceData.instance().getFailedAppInfo(), MediaServiceData.instance().getAppInfo());
+        String playerUrl = appInfo != null ? appInfo.getPlayerUrl() : null;
+        if (playerUrl != null) {
+            String playerVersion = UrlQueryStringFactory.parse(Uri.parse(playerUrl)).get("player");
+            boolean isFailed = MediaServiceData.instance().getFailedAppInfo() != null;
+            appendRow("Video info version", isFailed ? Utils.color(playerVersion, Color.RED) : playerVersion);
+        }
     }
 
     private void appendRow(String name, boolean val) {
@@ -387,7 +410,7 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
         appendValueColumn(createTextView(val));
     }
 
-    private void appendRow(String name, String val) {
+    private void appendRow(String name, CharSequence val) {
         appendNameColumn(createTextView(name));
         appendValueColumn(createTextView(val));
     }
@@ -406,7 +429,7 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
         column2.addView(content);
     }
 
-    private TextView createTextView(String name) {
+    private TextView createTextView(CharSequence name) {
         TextView textView = new TextView(mContext);
         textView.setText(name);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, mTextSize);

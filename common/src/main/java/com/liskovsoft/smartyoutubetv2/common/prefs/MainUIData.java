@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.common.prefs;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
+
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.R;
@@ -11,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.provide
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase;
 import com.liskovsoft.smartyoutubetv2.common.utils.ClickbaitRemover;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,9 @@ import java.util.List;
 
 public class MainUIData extends DataChangeBase implements ProfileChangeListener {
     private static final String MAIN_UI_DATA = "main_ui_data2";
+    public static final int CARD_PREVIEW_DISABLED = 0;
+    public static final int CARD_PREVIEW_MUTED = 1;
+    public static final int CARD_PREVIEW_FULL = 2;
     public static final int CHANNEL_SORTING_NEW_CONTENT = 0;
     public static final int CHANNEL_SORTING_NAME = 1;
     public static final int CHANNEL_SORTING_DEFAULT = 2;
@@ -60,29 +65,30 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     public static final long MENU_ITEM_SHARE_QR_LINK = 1L << 32;
     public static final long MENU_ITEM_PLAY_NEXT = 1L << 33;
     public static final long MENU_ITEM_RENAME_PLAYLIST = 1L << 34;
+    public static final long MENU_ITEM_NOT_RECOMMEND_CHANNEL = 1L << 35;
     public static final int TOP_BUTTON_BROWSE_ACCOUNTS = 1;
     public static final int TOP_BUTTON_CHANGE_LANGUAGE = 1 << 1;
     public static final int TOP_BUTTON_SEARCH = 1 << 2;
     public static final int TOP_BUTTON_DEFAULT = TOP_BUTTON_SEARCH | TOP_BUTTON_BROWSE_ACCOUNTS;
-    public static final long MENU_ITEM_DEFAULT = MENU_ITEM_PIN_TO_SIDEBAR | MENU_ITEM_NOT_INTERESTED | MENU_ITEM_REMOVE_FROM_HISTORY |
-            MENU_ITEM_MOVE_SECTION_UP | MENU_ITEM_MOVE_SECTION_DOWN | MENU_ITEM_RENAME_SECTION | MENU_ITEM_SAVE_REMOVE_PLAYLIST |
-            MENU_ITEM_ADD_TO_PLAYLIST | MENU_ITEM_CREATE_PLAYLIST | MENU_ITEM_RENAME_PLAYLIST | MENU_ITEM_ADD_TO_NEW_PLAYLIST |
-            MENU_ITEM_STREAM_REMINDER | MENU_ITEM_PLAYLIST_ORDER | MENU_ITEM_OPEN_CHANNEL | MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS |
-            MENU_ITEM_PLAY_NEXT | MENU_ITEM_OPEN_PLAYLIST | MENU_ITEM_SUBSCRIBE | MENU_ITEM_CLEAR_HISTORY;
+    public static final long MENU_ITEM_DEFAULT = MENU_ITEM_PIN_TO_SIDEBAR | MENU_ITEM_NOT_INTERESTED | MENU_ITEM_NOT_RECOMMEND_CHANNEL |
+            MENU_ITEM_REMOVE_FROM_HISTORY | MENU_ITEM_MOVE_SECTION_UP | MENU_ITEM_MOVE_SECTION_DOWN | MENU_ITEM_RENAME_SECTION |
+            MENU_ITEM_SAVE_REMOVE_PLAYLIST | MENU_ITEM_ADD_TO_PLAYLIST | MENU_ITEM_CREATE_PLAYLIST | MENU_ITEM_RENAME_PLAYLIST |
+            MENU_ITEM_ADD_TO_NEW_PLAYLIST | MENU_ITEM_STREAM_REMINDER | MENU_ITEM_PLAYLIST_ORDER | MENU_ITEM_OPEN_CHANNEL |
+            MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS | MENU_ITEM_PLAY_NEXT | MENU_ITEM_OPEN_PLAYLIST | MENU_ITEM_SUBSCRIBE | MENU_ITEM_CLEAR_HISTORY;
     private static final Long[] MENU_ITEM_DEFAULT_ORDER = {
             MENU_ITEM_EXIT_FROM_PIP, MENU_ITEM_PLAY_VIDEO, MENU_ITEM_PLAY_VIDEO_INCOGNITO, MENU_ITEM_REMOVE_FROM_HISTORY,
             MENU_ITEM_STREAM_REMINDER, MENU_ITEM_RECENT_PLAYLIST, MENU_ITEM_ADD_TO_PLAYLIST, MENU_ITEM_CREATE_PLAYLIST, MENU_ITEM_RENAME_PLAYLIST,
-            MENU_ITEM_ADD_TO_NEW_PLAYLIST, MENU_ITEM_NOT_INTERESTED, MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS, MENU_ITEM_MARK_AS_WATCHED,
-            MENU_ITEM_PLAYLIST_ORDER, MENU_ITEM_PLAY_NEXT, MENU_ITEM_ADD_TO_QUEUE, MENU_ITEM_SHOW_QUEUE, MENU_ITEM_OPEN_CHANNEL, MENU_ITEM_OPEN_PLAYLIST,
-            MENU_ITEM_SUBSCRIBE, MENU_ITEM_EXCLUDE_FROM_CONTENT_BLOCK, MENU_ITEM_PIN_TO_SIDEBAR, MENU_ITEM_SAVE_REMOVE_PLAYLIST, MENU_ITEM_OPEN_DESCRIPTION,
-            MENU_ITEM_OPEN_COMMENTS, MENU_ITEM_SHARE_LINK, MENU_ITEM_SHARE_EMBED_LINK, MENU_ITEM_SHARE_QR_LINK, MENU_ITEM_SELECT_ACCOUNT,
-            MENU_ITEM_TOGGLE_HISTORY, MENU_ITEM_CLEAR_HISTORY, MENU_ITEM_MOVE_SECTION_UP, MENU_ITEM_MOVE_SECTION_DOWN, MENU_ITEM_UPDATE_CHECK
+            MENU_ITEM_ADD_TO_NEW_PLAYLIST, MENU_ITEM_NOT_INTERESTED, MENU_ITEM_NOT_RECOMMEND_CHANNEL, MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS,
+            MENU_ITEM_MARK_AS_WATCHED, MENU_ITEM_PLAYLIST_ORDER, MENU_ITEM_PLAY_NEXT, MENU_ITEM_ADD_TO_QUEUE, MENU_ITEM_SHOW_QUEUE, MENU_ITEM_OPEN_CHANNEL,
+            MENU_ITEM_OPEN_PLAYLIST, MENU_ITEM_SUBSCRIBE, MENU_ITEM_EXCLUDE_FROM_CONTENT_BLOCK, MENU_ITEM_PIN_TO_SIDEBAR, MENU_ITEM_SAVE_REMOVE_PLAYLIST,
+            MENU_ITEM_OPEN_DESCRIPTION, MENU_ITEM_OPEN_COMMENTS, MENU_ITEM_SHARE_LINK, MENU_ITEM_SHARE_EMBED_LINK, MENU_ITEM_SHARE_QR_LINK,
+            MENU_ITEM_SELECT_ACCOUNT, MENU_ITEM_TOGGLE_HISTORY, MENU_ITEM_CLEAR_HISTORY, MENU_ITEM_MOVE_SECTION_UP, MENU_ITEM_MOVE_SECTION_DOWN,
+            MENU_ITEM_UPDATE_CHECK
     };
     @SuppressLint("StaticFieldLeak")
     private static MainUIData sInstance;
     private final Context mContext;
     private final AppPrefs mPrefs;
-    private boolean mIsCardAnimatedPreviewsEnabled;
     private boolean mIsCardMultilineTitleEnabled;
     private boolean mIsCardMultilineSubtitleEnabled;
     private boolean mIsCardTextAutoScrollEnabled;
@@ -103,6 +109,9 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     private boolean mIsChannelsFilterEnabled;
     private boolean mIsChannelSearchBarEnabled;
     private boolean mIsPinnedChannelRowsEnabled;
+    private int mCardPreviewType;
+    private final Runnable mPersistStateInt = this::persistStateInt;
+    private boolean mIsUnlocalizedTitlesEnabled;
 
     private MainUIData(Context context) {
         mContext = context;
@@ -118,15 +127,6 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         }
 
         return sInstance;
-    }
-
-    public void enableCardAnimatedPreviews(boolean enable) {
-        mIsCardAnimatedPreviewsEnabled = enable;
-        persistState();
-    }
-
-    public boolean isCardAnimatedPreviewsEnabled() {
-        return mIsCardAnimatedPreviewsEnabled;
     }
 
     public void enableCardMultilineTitle(boolean enable) {
@@ -298,8 +298,8 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     }
 
     public void setMenuItemIndex(int index, Long menuItem) {
-        int currentIndex = getMenuItemIndex(menuItem);
-        index = currentIndex < index ? index - 1 : index;
+        //int currentIndex = getMenuItemIndex(menuItem);
+        //index = currentIndex < index ? index - 1 : index;
 
         mMenuItemsOrdered.remove(menuItem);
 
@@ -332,6 +332,24 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
 
     public boolean isTopButtonEnabled(int button) {
         return (mTopButtons & button) == button;
+    }
+
+    public int getCardPreviewType() {
+        return mCardPreviewType;
+    }
+
+    public void setCardPreviewType(int type) {
+        mCardPreviewType = type;
+        persistState();
+    }
+
+    public boolean isUnlocalizedTitlesEnabled() {
+        return mIsUnlocalizedTitlesEnabled;
+    }
+
+    public void enableUnlocalizedTitles(boolean enabled) {
+        mIsUnlocalizedTitlesEnabled = enabled;
+        persistState();
     }
 
     private void initColorSchemes() {
@@ -384,7 +402,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
 
         String[] split = Helpers.splitData(data);
 
-        mIsCardAnimatedPreviewsEnabled = Helpers.parseBoolean(split, 0, true);
+        //mIsCardAnimatedPreviewsEnabled = Helpers.parseBoolean(split, 0, true);
         mVideoGridScale = Helpers.parseFloat(split, 1, 1.35f);
         mUIScale = Helpers.parseFloat(split, 2, 1.0f);
         mColorSchemeIndex = Helpers.parseInt(split, 3, 2);
@@ -405,10 +423,23 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         mIsChannelsFilterEnabled = Helpers.parseBoolean(split, 18, true);
         mIsChannelSearchBarEnabled = Helpers.parseBoolean(split, 19, true);
         mIsPinnedChannelRowsEnabled = Helpers.parseBoolean(split, 20, true);
+        mCardPreviewType = Helpers.parseInt(split, 21, CARD_PREVIEW_DISABLED);
+        mIsUnlocalizedTitlesEnabled = Helpers.parseBoolean(split, 22, false);
 
+        int idx = -1;
         for (Long menuItem : MENU_ITEM_DEFAULT_ORDER) {
+            idx++;
             if (!mMenuItemsOrdered.contains(menuItem)) {
-                mMenuItemsOrdered.add(menuItem);
+                if (idx < mMenuItemsOrdered.size()) {
+                    mMenuItemsOrdered.add(idx, menuItem);
+                } else {
+                    mMenuItemsOrdered.add(menuItem);
+                }
+
+                boolean isEnabled = (MENU_ITEM_DEFAULT & menuItem) == menuItem;
+                if (isEnabled) {
+                    mMenuItems |= menuItem;
+                }
             }
         }
 
@@ -420,16 +451,22 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         
         updateDefaultValues();
     }
-    
+
     private void persistState() {
-        mPrefs.setProfileData(MAIN_UI_DATA, Helpers.mergeData(mIsCardAnimatedPreviewsEnabled,
+        onDataChange();
+        Utils.postDelayed(mPersistStateInt, 10_000);
+    }
+
+    private void persistStateInt() {
+        mPrefs.setProfileData(MAIN_UI_DATA, Helpers.mergeData(null,
                 mVideoGridScale, mUIScale, mColorSchemeIndex, mIsCardMultilineTitleEnabled,
                 mChannelCategorySorting, mPlaylistsStyle, mCardTitleLinesNum, mIsCardTextAutoScrollEnabled,
                 mIsUploadsOldLookEnabled, mIsUploadsAutoLoadEnabled, mCardTextScrollSpeed, mMenuItems, mTopButtons,
                 null, mThumbQuality, mIsCardMultilineSubtitleEnabled, Helpers.mergeList(mMenuItemsOrdered),
-                mIsChannelsFilterEnabled, mIsChannelSearchBarEnabled, mIsPinnedChannelRowsEnabled));
+                mIsChannelsFilterEnabled, mIsChannelSearchBarEnabled, mIsPinnedChannelRowsEnabled, mCardPreviewType,
+                mIsUnlocalizedTitlesEnabled));
 
-        onDataChange();
+        //onDataChange();
     }
 
     public static class ColorScheme {

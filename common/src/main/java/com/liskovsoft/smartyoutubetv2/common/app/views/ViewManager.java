@@ -12,13 +12,17 @@ import androidx.annotation.NonNull;
 import com.liskovsoft.sharedutils.helpers.FileHelpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.locale.LocaleUpdater;
+import com.liskovsoft.sharedutils.misc.WeakHashSet;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 //import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -44,6 +48,7 @@ public class ViewManager {
     private boolean mIsPlayerOnlyModeEnabled;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
+    private WeakHashSet<Runnable> mOnFinish;
 
     private ViewManager(Context context) {
         mContext = context;
@@ -325,6 +330,7 @@ public class ViewManager {
                 BrowsePresenter.unhold();
 //                AppUpdatePresenter.unhold();
                 MotherActivity.invalidate();
+                runOnFinish();
                 mIsMoveToBackEnabled = false;
             }, 1_000);
         }
@@ -425,7 +431,7 @@ public class ViewManager {
         }
     }
 
-    public static boolean isVisible(Object view) {
+    public boolean isVisible(Object view) {
         if (view instanceof Fragment) {
             return ((Fragment) view).isVisible();
         }
@@ -467,5 +473,37 @@ public class ViewManager {
         if (!isPlayerInForeground()) {
             startView(PlaybackView.class);
         }
+    }
+
+    public BasePresenter<?> getCurrentPresenter() {
+        Class<?> topView = getTopView();
+
+        if (topView == BrowseView.class) {
+            return BrowsePresenter.instance(mContext);
+        } else if (topView == SearchView.class) {
+            return SearchPresenter.instance(mContext);
+        } else if (topView == ChannelView.class) {
+            return ChannelPresenter.instance(mContext);
+        } else if (topView == ChannelUploadsView.class) {
+            return ChannelUploadsPresenter.instance(mContext);
+        }
+
+        return null;
+    }
+
+    public void addOnFinish(Runnable onFinish) {
+        if (mOnFinish == null) {
+            mOnFinish = new WeakHashSet<>();
+        }
+
+        mOnFinish.add(onFinish);
+    }
+
+    private void runOnFinish() {
+        if (mOnFinish == null) {
+            return;
+        }
+
+        mOnFinish.forEach(Runnable::run);
     }
 }

@@ -8,7 +8,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCatego
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AppDialogView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,13 +57,19 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         super.onFinish();
         clear();
 
-        for (Runnable callback : mOnFinish) {
+        if (mOnFinish.isEmpty()) {
+            return;
+        }
+
+        // Copy-then-Clear approach to fix possible stackoverflow
+        List<Runnable> callbacks = new ArrayList<>(mOnFinish);
+        mOnFinish.clear();
+
+        for (Runnable callback : callbacks) {
             if (callback != null) {
                 callback.run();
             }
         }
-
-        mOnFinish.clear();
     }
 
     private void clear() {
@@ -131,7 +136,7 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
             onViewInitialized();
         }
 
-        ViewManager.instance(getContext()).startView(AppDialogView.class, true);
+        getViewManager().startView(AppDialogView.class, true);
 
         setupTimeout();
     }
@@ -158,8 +163,12 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         // Also check that current dialog almost closed (new view start is pending from a menu item)
         // Hmm. Maybe current dialog is pending. Check that view is null.
         // Also check that we aren't started the same view (nested dialog).
-        return (ViewManager.isVisible(getView()) && getView() != null && !getView().isPaused()) ||
-                ViewManager.instance(getContext()).isViewPending(AppDialogView.class);
+        return (getViewManager().isVisible(getView()) && getView() != null && !getView().isPaused()) ||
+                getViewManager().isViewPending(AppDialogView.class);
+    }
+
+    public boolean isCommentsDialogShown() {
+        return isDialogShown() && isTypeComments();
     }
 
     public void appendCategory(OptionCategory category) {
@@ -212,6 +221,12 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         mTimeoutMs = timeoutMs;
     }
 
+    public void setOnFinish(Runnable onFinish) {
+        if (!mOnFinish.contains(onFinish)) {
+            mOnFinish.add(onFinish);
+        }
+    }
+
     public void enableTransparent(boolean enable) {
         mIsTransparent = enable;
     }
@@ -256,5 +271,22 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         if (mTimeoutMs > 0) {
             mHandler.postDelayed(mCloseDialog, mTimeoutMs);
         }
+    }
+
+    private boolean isTypeComments() {
+        if (mBackupCategories == null) {
+            return false;
+        }
+
+        boolean isComments = false;
+
+        for (OptionCategory category : mBackupCategories) {
+            if (category.type == OptionCategory.TYPE_COMMENTS) {
+                isComments = true;
+                break;
+            }
+        }
+
+        return isComments;
     }
 }
