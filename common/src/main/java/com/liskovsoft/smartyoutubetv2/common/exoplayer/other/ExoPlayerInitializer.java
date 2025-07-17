@@ -1,12 +1,14 @@
 package com.liskovsoft.smartyoutubetv2.common.exoplayer.other;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.SeekParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
@@ -21,16 +23,19 @@ import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.TransferListener;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 
 import java.util.UUID;
 
 public class ExoPlayerInitializer {
     private final int mMaxBufferBytes;
     private final PlayerData mPlayerData;
+    private final PlayerTweaksData mPlayerTweaksData;
     private static AudioAttributes sAudioAttributes;
 
     public ExoPlayerInitializer(Context context) {
         mPlayerData = PlayerData.instance(context);
+        mPlayerTweaksData = PlayerTweaksData.instance(context);
 
         long deviceRam = Helpers.getDeviceRam(context);
 
@@ -63,16 +68,13 @@ public class ExoPlayerInitializer {
         // Fix still image while audio is playing (happens after format change or exit from sleep)
         //player.setPlayWhenReady(true);
 
-        return player;
-    }
+        applyPlaybackFixes(player);
 
-    /**
-     * Manage audio focus. E.g. use Spotify when audio is disabled.
-     */
-    public static void enableAudioFocus(SimpleExoPlayer player, boolean enable) {
-        if (player != null) {
-            setAudioAttributes(player, getAudioAttributes(), enable);
-        }
+        setupAudioFocus(player);
+
+        setupVolumeBoost(player);
+
+        return player;
     }
 
     private static AudioAttributes getAudioAttributes() {
@@ -84,14 +86,6 @@ public class ExoPlayerInitializer {
         }
 
         return sAudioAttributes;
-    }
-
-    private static void setAudioAttributes(SimpleExoPlayer player, AudioAttributes audioAttributes, boolean enable) {
-        try {
-            player.setAudioAttributes(audioAttributes, enable);
-        } catch (SecurityException e) { // uid 10390 not allowed to perform TAKE_AUDIO_FOCUS
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -129,8 +123,8 @@ public class ExoPlayerInitializer {
                 baseBuilder.setBackBuffer(minBufferMs, true);
                 break;
             case PlayerData.BUFFER_MEDIUM:
-                minBufferMs = 30_000;
-                maxBufferMs = 30_000;
+                //minBufferMs = 30_000;
+                //maxBufferMs = 30_000;
                 break;
             case PlayerData.BUFFER_LOW:
                 minBufferMs = 5_000; // LIVE fix
@@ -144,6 +138,43 @@ public class ExoPlayerInitializer {
                 .setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs);
 
         return baseBuilder.createDefaultLoadControl();
+    }
+
+    private void setupVolumeBoost(SimpleExoPlayer player) {
+        // 5.1 audio cannot be boosted (format isn't supported error)
+        // also, other 2.0 tracks in 5.1 group is already too loud. so cancel them too.
+        float volume = mPlayerTweaksData.isPlayerAutoVolumeEnabled() ? 2.0f : mPlayerData.getPlayerVolume();
+        if (volume > 1f && Build.VERSION.SDK_INT >= 19) {
+            VolumeBooster mVolumeBooster = new VolumeBooster(true, volume);
+            player.addAudioListener(mVolumeBooster);
+        }
+    }
+
+    /**
+     * Manage audio focus. E.g. use Spotify when audio is disabled.
+     */
+    private void setupAudioFocus(SimpleExoPlayer player) {
+        if (player != null && mPlayerTweaksData.isAudioFocusEnabled()) {
+            try {
+                player.setAudioAttributes(getAudioAttributes(), true);
+            } catch (SecurityException e) { // uid 10390 not allowed to perform TAKE_AUDIO_FOCUS
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void applyPlaybackFixes(SimpleExoPlayer player) {
+        // Try to fix decoder error on Nvidia Shield 2019.
+        // Init resources as early as possible.
+        //player.setForegroundMode(true);
+        // NOTE: Avoid using seekParameters. ContentBlock hangs because of constant skipping to the segment start.
+        // ContentBlock hangs on the last segment: https://www.youtube.com/watch?v=pYymRbfjKv8
+
+        // Fix seeking on TextureView (some devices only)
+        if (mPlayerTweaksData.isTextureViewEnabled()) {
+            // Also, live stream (dash) seeking fix
+            player.setSeekParameters(SeekParameters.CLOSEST_SYNC);
+        }
     }
 
     private DrmSessionManager<FrameworkMediaCrypto> createDrmManager() {

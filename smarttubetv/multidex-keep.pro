@@ -1,3 +1,9 @@
+-keep class com.bumptech.glide.request.RequestOptions { *; }
+-keep class com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tooltips.TooltipCompatHandler { *; }
+-keepclassmembers class android.view.View {
+    void setZ(float);
+    <init>(...);
+}
 -keep class androidx.leanback.widget.ItemBridgeAdapter { *; }
 #-keep class com.liskovsoft.smartyoutubetv2.common.exoplayer.controller.ExoPlayerController { *; }
 -keepclassmembers class com.liskovsoft.smartyoutubetv2.common.exoplayer.controller.ExoPlayerController {

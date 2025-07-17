@@ -244,6 +244,39 @@ public class TrackSelectorUtil {
                 "STATE_ENDED";
     }
 
+    /**
+     * Check widescreen: 16:9, 16:8, 16:7 etc<br/>
+     */
+    public static boolean isWideScreenOld(Format format) {
+        if (format == null) {
+            return false;
+        }
+
+        return format.width / (float) format.height >= 1.77;
+    }
+
+    /**
+     * MOD: Mimic official behavior (handle low res shorts etc)
+     */
+    public static boolean isWideScreen(Format format) {
+        if (format == null) {
+            return false;
+        }
+
+        return format.width / (float) format.height > 1;
+    }
+
+    public static boolean is4to3Screen(Format format) {
+        if (format == null) {
+            return false;
+        }
+
+        float ratio = format.width / (float) format.height;
+        float targetRatio = 4 / (float) 3;
+
+        return Math.abs(ratio - targetRatio) < 0.2;
+    }
+
     public static String getResolutionLabel(Format format) {
         Pair<String, String> labels = getResolutionPrefixAndHeight(format);
 

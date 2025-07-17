@@ -237,7 +237,13 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
-        applyPlaybackMode(getPlaybackMode());
+        // Stop the playback if the user is browsing options or reading comments
+        int playbackMode = getPlaybackMode();
+        if (getAppDialogPresenter().isDialogShown() && !getAppDialogPresenter().isOverlay() && playbackMode != PlayerConstants.PLAYBACK_MODE_ONE) {
+            getAppDialogPresenter().setOnFinish(mOnApplyPlaybackMode);
+        } else {
+            applyPlaybackMode(playbackMode);
+        }
     }
 
     @Override
@@ -275,7 +281,7 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
-        if (getPlayerData().isSonyTimerFixEnabled() && System.currentTimeMillis() - mSleepTimerStartMs > 3 * 60 * 60 * 1_000) {
+        if (getPlayerData().isSonyTimerFixEnabled() && System.currentTimeMillis() - mSleepTimerStartMs > 2 * 60 * 60 * 1_000) {
             getPlayer().setPlayWhenReady(false);
             getPlayer().setTitle(getContext().getString(R.string.sleep_timer));
             getPlayer().showOverlay(true);
@@ -697,12 +703,6 @@ public class VideoLoaderController extends BasePlayerController {
         Video video = getVideo();
         // Fix simultaneous videos loading (e.g. when playback ends and user opens new video)
         if (video == null || isActionsRunning()) {
-            return;
-        }
-
-        // Stop the playback if the user is browsing options or reading comments
-        if (getAppDialogPresenter().isDialogShown() && !getAppDialogPresenter().isOverlay() && playbackMode != PlayerConstants.PLAYBACK_MODE_ONE) {
-            getAppDialogPresenter().setOnFinish(mOnApplyPlaybackMode);
             return;
         }
 

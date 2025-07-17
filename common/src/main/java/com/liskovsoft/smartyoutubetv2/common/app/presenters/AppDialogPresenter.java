@@ -4,10 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+
+import com.liskovsoft.sharedutils.misc.WeakHashSet;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AppDialogView;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +20,8 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
     private static AppDialogPresenter sInstance;
     private final Handler mHandler;
     private final Runnable mCloseDialog = this::closeDialog;
-    private final List<Runnable> mOnFinish = new ArrayList<>();
+    private final WeakHashSet<Runnable> mOnStart = new WeakHashSet<>();
+    private final WeakHashSet<Runnable> mOnFinish = new WeakHashSet<>();
     private String mTitle;
     private long mTimeoutMs;
     private boolean mIsTransparent;
@@ -57,19 +61,7 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         super.onFinish();
         clear();
 
-        if (mOnFinish.isEmpty()) {
-            return;
-        }
-
-        // Copy-then-Clear approach to fix possible stackoverflow
-        List<Runnable> callbacks = new ArrayList<>(mOnFinish);
-        mOnFinish.clear();
-
-        for (Runnable callback : callbacks) {
-            if (callback != null) {
-                callback.run();
-            }
-        }
+        Utils.runMyCallbacks(mOnFinish);
     }
 
     private void clear() {
@@ -102,6 +94,7 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
     @Override
     public void onViewInitialized() {
         getView().show(mBackupCategories, mBackupTitle, mBackupIsExpandable, mBackupIsTransparent, mBackupIsOverlay, mBackupId);
+        Utils.runMyCallbacks(mOnStart);
     }
 
     /**
@@ -221,10 +214,12 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         mTimeoutMs = timeoutMs;
     }
 
+    public void setOnStart(Runnable onStart) {
+        Utils.addMyCallback(mOnStart, onStart);
+    }
+
     public void setOnFinish(Runnable onFinish) {
-        if (!mOnFinish.contains(onFinish)) {
-            mOnFinish.add(onFinish);
-        }
+        Utils.addMyCallback(mOnFinish, onFinish);
     }
 
     public void enableTransparent(boolean enable) {
@@ -244,6 +239,16 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
 
     public boolean isOverlay() {
         return getView() != null && getView().isOverlay();
+    }
+
+    public boolean isComments() {
+        if (mBackupCategories == null || mBackupCategories.isEmpty()) {
+            return false;
+        }
+
+        OptionCategory optionCategory = mBackupCategories.get(0);
+
+        return optionCategory.type == OptionCategory.TYPE_COMMENTS;
     }
 
     /**
