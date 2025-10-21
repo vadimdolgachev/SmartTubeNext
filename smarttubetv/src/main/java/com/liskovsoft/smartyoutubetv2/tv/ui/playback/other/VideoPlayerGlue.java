@@ -83,6 +83,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     private final PlaybackControlsRow.SkipPreviousAction mSkipPreviousAction;
     private final PlaybackControlsRow.SkipNextAction mSkipNextAction;
     private final PlaybackControlsRow.FastForwardAction mFastForwardAction;
+    private final VideoStatsAction mVideoStatsAction;
     private final PlaybackControlsRow.RewindAction mRewindAction;
     private final Map<Integer, Action> mActions = new HashMap<>();
     private final OnActionClickedListener mActionListener;
@@ -105,6 +106,7 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         mSkipNextAction = new PlaybackControlsRow.SkipNextAction(context);
         mFastForwardAction = new PlaybackControlsRow.FastForwardAction(context);
         mRewindAction = new PlaybackControlsRow.RewindAction(context);
+        mVideoStatsAction = new VideoStatsAction(context);
 
         ThumbsUpAction thumbsUpAction = new ThumbsUpAction(context);
         ThumbsDownAction thumbsDownAction = new ThumbsDownAction(context);
@@ -341,6 +343,11 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
     public void setNextTitle(CharSequence title) {
         mSkipNextAction.setLabel1(title != null ? title : getContext().getString(R.string.lb_playback_controls_skip_next));
         invalidateUi(mSkipNextAction);
+    }
+
+    public void setDebugInfoActionState(boolean show) {
+        mVideoStatsAction.setIndex(show ? TwoStateAction.INDEX_ON : TwoStateAction.INDEX_OFF);
+        invalidateUi(mVideoStatsAction);
     }
 
     @Override

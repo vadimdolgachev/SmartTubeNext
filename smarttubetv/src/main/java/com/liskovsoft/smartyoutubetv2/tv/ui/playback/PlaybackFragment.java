@@ -1232,6 +1232,13 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
+    public void setDebugButtonState(boolean show) {
+        if (mPlayerGlue != null) {
+            mPlayerGlue.setDebugInfoActionState(show);
+        }
+    }
+
+    @Override
     public void showDebugInfo(boolean show) {
         if (mDebugInfoManager != null) {
             mDebugInfoManager.show(show);
