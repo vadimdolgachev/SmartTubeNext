@@ -24,7 +24,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
+//import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
@@ -329,7 +329,7 @@ public class ViewManager {
                 clearCaches();
                 SplashPresenter.unhold();
                 BrowsePresenter.unhold();
-                AppUpdatePresenter.unhold();
+//                AppUpdatePresenter.unhold();
                 MotherActivity.invalidate();
                 runOnFinish();
                 mIsMoveToBackEnabled = false;

@@ -14,6 +14,7 @@ import androidx.leanback.media.PlayerAdapter;
 import androidx.leanback.widget.Action;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ObjectAdapter;
+import androidx.leanback.widget.OnActionClickedListener;
 import androidx.leanback.widget.PlaybackControlsRow;
 import androidx.leanback.widget.PlaybackControlsRow.MultiAction;
 import androidx.leanback.widget.PlaybackRowPresenter;
@@ -163,12 +164,12 @@ public class VideoPlayerGlue extends MaxControlsVideoPlayerGlue<PlayerAdapter> i
         if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_PIP)) {
             adapter.add(mActions.get(R.id.action_pip));
         }
-        if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_SCREEN_DIMMING)) {
-            adapter.add(mActions.get(R.id.action_screen_dimming));
-        }
-        if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_CHAT)) {
-            adapter.add(mActions.get(R.id.action_chat));
-        }
+        //if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_SCREEN_DIMMING)) {
+        //    adapter.add(mActions.get(R.id.action_screen_dimming));
+        //}
+        //if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_CHAT)) {
+        //    adapter.add(mActions.get(R.id.action_chat));
+        //}
         if (mPlayerTweaksData.isPlayerButtonEnabled(PlayerTweaksData.PLAYER_BUTTON_SEARCH)) {
             adapter.add(mActions.get(R.id.action_search));
         }

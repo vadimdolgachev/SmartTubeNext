@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Build;
 
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.ContextMenuManager;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.providers.ContextMenuProvider;
@@ -376,24 +377,24 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
                 "App.Theme.DarkGrey.OLED.Browse",
                 "App.Theme.DarkGrey.Preferences",
                 mContext));
-        mColorSchemes.add(new ColorScheme(
-                R.string.color_scheme_teal_oled,
-                "App.Theme.Leanback.OLED.Player",
-                "App.Theme.Leanback.OLED.Browse",
-                null,
-                mContext));
-        mColorSchemes.add(new ColorScheme(
-                R.string.color_scheme_dark_grey_monochrome,
-                "App.Theme.DarkGrey2.OLED.Player",
-                "App.Theme.DarkGrey2.OLED.Browse",
-                "App.Theme.DarkGrey.Preferences",
-                mContext));
-        mColorSchemes.add(new ColorScheme(
-                R.string.color_scheme_dark_blue,
-                "App.Theme.Leanback.Blue.Player",
-                "App.Theme.Leanback.Blue.Browse",
-                "App.Theme.Leanback.Blue.Preferences",
-                mContext));
+//        mColorSchemes.add(new ColorScheme(
+//                R.string.color_scheme_teal_oled,
+//                "App.Theme.Leanback.OLED.Player",
+//                "App.Theme.Leanback.OLED.Browse",
+//                null,
+//                mContext));
+//        mColorSchemes.add(new ColorScheme(
+//                R.string.color_scheme_dark_grey_monochrome,
+//                "App.Theme.DarkGrey2.OLED.Player",
+//                "App.Theme.DarkGrey2.OLED.Browse",
+//                "App.Theme.DarkGrey.Preferences",
+//                mContext));
+//        mColorSchemes.add(new ColorScheme(
+//                R.string.color_scheme_dark_blue,
+//                "App.Theme.Leanback.Blue.Player",
+//                "App.Theme.Leanback.Blue.Browse",
+//                "App.Theme.Leanback.Blue.Preferences",
+//                mContext));
     }
 
     private void restoreState() {
@@ -402,9 +403,9 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         String[] split = Helpers.splitData(data);
 
         //mIsCardAnimatedPreviewsEnabled = Helpers.parseBoolean(split, 0, true);
-        mVideoGridScale = Helpers.parseFloat(split, 1, 1.0f); // 4 cards in a row
+        mVideoGridScale = Helpers.parseFloat(split, 1, 1.35f);
         mUIScale = Helpers.parseFloat(split, 2, 1.0f);
-        mColorSchemeIndex = Helpers.parseInt(split, 3, 1);
+        mColorSchemeIndex = Helpers.parseInt(split, 3, 2);
         mIsCardMultilineTitleEnabled = Helpers.parseBoolean(split, 4, true);
         mChannelCategorySorting = Helpers.parseInt(split, 5, CHANNEL_SORTING_LAST_VIEWED);
         mPlaylistsStyle = Helpers.parseInt(split, 6, PLAYLISTS_STYLE_GRID);
@@ -455,7 +456,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         onDataChange();
         Utils.postDelayed(mPersistStateInt, 10_000);
     }
-    
+
     private void persistStateInt() {
         mPrefs.setProfileData(MAIN_UI_DATA, Helpers.mergeData(null,
                 mVideoGridScale, mUIScale, mColorSchemeIndex, mIsCardMultilineTitleEnabled,

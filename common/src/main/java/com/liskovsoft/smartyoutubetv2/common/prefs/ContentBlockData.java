@@ -230,7 +230,7 @@ public class ContentBlockData {
 
         String[] split = Helpers.splitData(data);
 
-        mIsSponsorBlockEnabled = Helpers.parseBoolean(split, 0, VERSION.SDK_INT > 19); // Android 4 may have memory problems
+        mIsSponsorBlockEnabled = Helpers.parseBoolean(split, 0, false); // Android 4 may have memory problems
         // categories: index 2
         // don't skip segment
         // colorMarkers: index 4

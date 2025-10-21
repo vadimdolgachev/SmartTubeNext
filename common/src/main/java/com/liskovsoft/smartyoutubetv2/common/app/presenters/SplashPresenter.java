@@ -16,7 +16,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
+//import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
@@ -136,8 +136,8 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     private void checkForUpdates() {
-        BootDialogPresenter updatePresenter = BootDialogPresenter.instance(getContext());
-        updatePresenter.start();
+//        BootDialogPresenter updatePresenter = BootDialogPresenter.instance(getContext());
+//        updatePresenter.start();
         //updatePresenter.unhold();
     }
 

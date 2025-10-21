@@ -47,13 +47,13 @@ public class HQDialogController extends BasePlayerController {
         fitVideoIntoDialog();
 
         addQualityCategories();
-        addAudioLanguage();
+        //addAudioLanguage();
         addPresetsCategory();
-        addVideoZoomCategory();
+        //addVideoZoomCategory();
         addNetworkEngine();
         addVideoBufferCategory();
-        addAudioDelayCategory();
-        addPitchEffectCategory();
+        //addAudioDelayCategory();
+        //addPitchEffectCategory();
         //addBackgroundPlaybackCategory();
 
         appendOptions(mCategoriesInt);

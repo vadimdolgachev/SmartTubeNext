@@ -714,16 +714,16 @@ public class GeneralData implements ProfileChangeListener {
         mIsRemapChannelUpToSearchEnabled = Helpers.parseBoolean(split, 23, false);
         mIsHideShortsFromHomeEnabled = Helpers.parseBoolean(split, 24, false);
         mIsHideShortsFromHistoryEnabled = Helpers.parseBoolean(split, 25, false);
-        mIsScreensaverDisabled = Helpers.parseBoolean(split, 26, true);
+        mIsScreensaverDisabled = false;
         mIsVPNEnabled = Helpers.parseBoolean(split, 27, false);
         mLastPlaylistTitle = Helpers.parseStr(split, 28);
         mPlaylistOrder = Helpers.parseMap(split, 29, Helpers::parseStr, Helpers::parseInt);
         //String pendingStreams = Helpers.parseStr(split, 30);
         mPendingStreams = Helpers.parseList(split, 30, Video::fromString);
         mIsGlobalClockEnabled = Helpers.parseBoolean(split, 31, true);
-        //mTimeFormat = Helpers.parseInt(split, 32, -1);
-        mSettingsPassword = Helpers.parseStr(split, 33);
-        mIsChildModeEnabled = Helpers.parseBoolean(split, 34, false);
+        //mTimeFormat = TIME_FORMAT_24;
+        mSettingsPassword = null;
+        mIsChildModeEnabled = false;
         mIsHistoryEnabled = Helpers.parseBoolean(split, 35, true);
         mScreensaverTimeoutMs = Helpers.parseInt(split, 36, 60 * 1_000);
         // ScreensaverMode was here

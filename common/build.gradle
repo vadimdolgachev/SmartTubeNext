@@ -102,6 +102,7 @@ dependencies {
     ststableImplementation project(':leanbackassistant')
     storigImplementation project(':leanbackassistant')
     staptoideImplementation project(':leanbackassistant')
+    stbolshoetvImplementation project(':leanbackassistant')
 
     stbetaImplementation project(':appupdatechecker2')
     ststableImplementation project(':appupdatechecker2')

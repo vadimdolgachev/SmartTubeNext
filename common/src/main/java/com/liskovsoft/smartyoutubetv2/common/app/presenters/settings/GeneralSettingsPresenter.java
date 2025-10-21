@@ -71,24 +71,24 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
     public void show() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
-        appendBootToSection(settingsPresenter);
+        //appendBootToSection(settingsPresenter);
         appendEnabledSections(settingsPresenter);
-        appendContextMenuItemsCategory(settingsPresenter);
+        //appendContextMenuItemsCategory(settingsPresenter);
         //appendContextMenuSortingCategory(settingsPresenter);
         //appendTopButtonsCategory(settingsPresenter);
-        appendHideVideos(settingsPresenter);
-        appendAppExitCategory(settingsPresenter);
-        appendBackgroundPlaybackCategory(settingsPresenter);
+        //appendHideVideos(settingsPresenter);
+        //appendAppExitCategory(settingsPresenter);
+        //appendBackgroundPlaybackCategory(settingsPresenter);
         //appendBackgroundPlaybackActivationCategory(settingsPresenter);
-        appendScreenDimmingCategory(settingsPresenter);
+        //appendScreenDimmingCategory(settingsPresenter);
         //appendScreenDimmingAmountCategory(settingsPresenter);
         //appendScreenDimmingTimeoutCategory(settingsPresenter);
         //appendTimeFormatCategory(settingsPresenter);
-        appendKeyRemappingCategory(settingsPresenter);
+        //appendKeyRemappingCategory(settingsPresenter);
         //appendAppBackupCategory(settingsPresenter);
         appendInternetCensorship(settingsPresenter);
-        appendHistoryCategory(settingsPresenter);
-        appendMiscCategory(settingsPresenter);
+        //appendHistoryCategory(settingsPresenter);
+        //appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.settings_general), mOnFinish);
     }
@@ -376,7 +376,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from("Page Up/Down -> Speed Up/Down",
                 option -> mGeneralData.setRemapPageUpToSpeedEnabled(option.isSelected()),
                 mGeneralData.isRemapPageUpToSpeedEnabled()));
-        
+
         options.add(UiOptionItem.from("Page Up/Down -> Speed Down/Up",
                 option -> mGeneralData.setRemapPageDownToSpeedEnabled(option.isSelected()),
                 mGeneralData.isRemapPageDownToSpeedEnabled()));
@@ -644,7 +644,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
                         if (option.isSelected()) {
                             settingsPresenter.closeDialog();
                         }
-                        
+
                         OkHttpManager.unhold();
                     },
                     mGeneralData.isProxyEnabled()));

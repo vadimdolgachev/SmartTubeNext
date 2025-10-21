@@ -781,7 +781,11 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
         mIsRemainingTimeEnabled = Helpers.parseBoolean(split, 6, true);
         mBackgroundMode = Helpers.parseInt(split, 7, PlayerEngine.BACKGROUND_MODE_DEFAULT);
         // afrData was there
-        mVideoFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 9)), getDefaultVideoFormat());
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
+            mVideoFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 9)), FormatItem.VIDEO_HD_VP9_30);
+        } else {
+            mVideoFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 9)), FormatItem.VIDEO_HD_AVC_30);
+        }
         mAudioFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 10)), getDefaultAudioFormat());
         mSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 11)), getDefaultSubtitleFormat());
         mVideoBufferType = Helpers.parseInt(split, 12, PlayerEngine.BUFFER_MEDIUM);

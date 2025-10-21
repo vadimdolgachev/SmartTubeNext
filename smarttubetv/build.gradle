@@ -85,20 +85,24 @@ android {
             }
         }
     }
+    signingConfigs {
+        release {
+            storeFile file(STORE_FILE)
+            storePassword STORE_PASSWORD
+            keyAlias KEY_ALIAS
+            keyPassword KEY_PASSWORD
+        }
+    }
     buildTypes {
         release {
-            // Enable minification
-            // shrinkResources true
-            // minifyEnabled true
-
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-
-            // signingConfig signingConfigs.release
+            signingConfig signingConfigs.release
         }
-        // Use same key for release and debug for testing
-        // debug {
-        //     signingConfig signingConfigs.release
-        // }
+        debug {
+            signingConfig signingConfigs.release
+        }
     }
 
     // gradle 4.6 migration: disable dimensions mechanism
@@ -118,6 +122,22 @@ android {
         storig {
             // matchingFallbacks = ['lite']
             applicationId "org.smartteam.smarttube.tv.orig"
+        }
+        strtarmenia {
+            // matchingFallbacks = ['lite']
+            versionCode 11000 + defaultConfig.versionCode
+            applicationId "com.google.android.youtube.tv"
+        }
+        stbolshoetv {
+            // matchingFallbacks = ['lite']
+            versionCode 11000 + defaultConfig.versionCode
+            applicationId "com.liskovsoft.videomanager"
+            resConfigs "ru"
+        }
+        stredboxtv {
+            // matchingFallbacks = ['lite']
+            versionCode 11000 + defaultConfig.versionCode
+            applicationId "com.redboxtv.smartyoutubetv"
         }
         stfiretv {
             // matchingFallbacks = ['lite']
@@ -176,6 +196,9 @@ dependencies {
     implementation 'com.github.zjupure:webpdecoder:' + webpDecoderVersion
     implementation 'androidx.multidex:multidex:' + multiDexVersion
 
+    implementation 'com.squareup.retrofit2:retrofit:' + retrofitVersion
+    implementation 'com.squareup.retrofit2:converter-gson:' + retrofitVersion
+
     //////// BEGIN EXOPLAYER /////////
 
     implementation project(':exoplayer-library')
@@ -223,6 +246,8 @@ dependencies {
     // implementation 'org.conscrypt:conscrypt-android:2.5.2'
 
     // debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
+
+    implementation 'org.conscrypt:conscrypt-android:2.5.2'
 
     //implementation 'com.github.stfalcon-studio:Chatkit:' + chatkitVersion
 
