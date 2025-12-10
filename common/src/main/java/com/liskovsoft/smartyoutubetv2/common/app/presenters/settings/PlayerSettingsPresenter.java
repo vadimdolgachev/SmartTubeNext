@@ -500,6 +500,10 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.suggestions_horizontally_scrolled),
+                option -> mPlayerTweaksData.setSuggestionsHorizontallyScrolled(option.isSelected()),
+                mPlayerTweaksData.isSuggestionsHorizontallyScrolled()));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.dont_resize_video_to_fit_dialog),
                 option -> mPlayerTweaksData.setDontResizeVideoToFitDialogEnabled(option.isSelected()),
                 mPlayerTweaksData.isDontResizeVideoToFitDialogEnabled()));
@@ -594,8 +598,8 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_global_focus),
                 getContext().getString(R.string.player_global_focus_desc),
-                option -> mPlayerTweaksData.setSimplePlayerNavigationEnabled(option.isSelected()),
-                mPlayerTweaksData.isSimplePlayerNavigationEnabled()));
+                option -> mPlayerTweaksData.setSyncRowButtonIndexEnabled(option.isSelected()),
+                mPlayerTweaksData.isSyncRowButtonIndexEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_ui_on_next),
                 option -> mPlayerTweaksData.setPlayerUiOnNextEnabled(option.isSelected()),

@@ -2,20 +2,19 @@ package com.liskovsoft.smartyoutubetv2.common.misc;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build.VERSION;
 import android.os.Environment;
 import android.os.Handler;
 import com.liskovsoft.sharedutils.helpers.FileHelpers;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.helpers.PermissionHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.HiddenPrefs;
-import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -24,41 +23,106 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
     private static final String BACKUP_DIR_NAME = "Backup";
     private final Context mContext;
     private static final String SHARED_PREFS_SUBDIR = "shared_prefs";
-    private final List<File> mDataDirs;
+    private final File mDataDir;
     private final List<File> mBackupDirs;
+    private final BackupAndRestoreHelper mHelper;
+    private final boolean mForceApi30;
+    private final String[] mBackupPatterns = new String[] {
+            "yt_service_prefs.xml",
+            "com.liskovsoft.appupdatechecker2.preferences.xml",
+            "com.liskovsoft.sharedutils.prefs.GlobalPreferences.xml",
+            "_preferences.xml" // before _ should be the app package name
+    };
     private Runnable mPendingHandler;
-    private String mBackupName;
 
     public interface OnBackupNames {
         void onBackupNames(List<String> backupNames);
     }
 
     public BackupAndRestoreManager(Context context) {
+        this(context, false);
+    }
+
+    public BackupAndRestoreManager(Context context, boolean forceApi30) {
         mContext = context;
-        mDataDirs = new ArrayList<>();
-        mDataDirs.add(new File(mContext.getApplicationInfo().dataDir, SHARED_PREFS_SUBDIR));
+        mForceApi30 = forceApi30;
+
+        mHelper = new BackupAndRestoreHelper(context);
+
+        mDataDir = new File(mContext.getApplicationInfo().dataDir, SHARED_PREFS_SUBDIR);
 
         mBackupDirs = new ArrayList<>();
-        mBackupDirs.add(new File(FileHelpers.getBackupDir(mContext), BACKUP_DIR_NAME));
-        //mBackupDirs.add(new File(FileHelpers.getExternalFilesDir(mContext), BACKUP_DIR_NAME)); // isn't used at a moment
-        // Fallback dir: Stable (in case app installed from scratch)
-        mBackupDirs.add(new File(new File(Environment.getExternalStorageDirectory(), "data/com.teamsmart.videomanager.tv"), BACKUP_DIR_NAME));
-        // Fallback dir: Beta (in case app installed from scratch)
-        mBackupDirs.add(new File(new File(Environment.getExternalStorageDirectory(), "data/com.liskovsoft.smarttubetv.beta"), BACKUP_DIR_NAME));
+    }
+
+    private void initBackupDirs() {
+        if (!mBackupDirs.isEmpty()) {
+            return;
+        }
+
+        File externalDir = getExternalStorageDirectory();
+        // Main backup dir
+        mBackupDirs.add(createBackupDir(new File(externalDir, String.format("data/%s", mContext.getPackageName()))));
+
+        File dataDir = new File(externalDir, "data");
+
+        if (!dataDir.exists()) {
+            dataDir.mkdirs();
+        }
+
+        File[] appDirs = dataDir.listFiles();
+
+        if (appDirs == null) {
+            return;
+        }
+
+        // Fallback dirs: in case multiple app flavors installed
+        for (File appDir : appDirs) {
+            File backupDir = createBackupDir(appDir);
+            if (!mBackupDirs.contains(backupDir)) {
+                mBackupDirs.add(backupDir);
+            }
+        }
+    }
+
+    private File createBackupDir(File appDir) {
+        return new File(appDir, BACKUP_DIR_NAME);
+    }
+
+    @SuppressWarnings("deprecation")
+    private File getExternalStorageDirectory() {
+        File result;
+
+        if (hasAccessOnlyToAppFolders()) {
+            result = mContext.getExternalMediaDirs()[0];
+
+            if (!result.exists()) {
+                result.mkdirs();
+            }
+        } else {
+            result = Environment.getExternalStorageDirectory();
+        }
+
+        return result;
     }
 
     public void checkPermAndRestore() {
-        checkPermAndRestore(null);
+        List<String> backupNames = getBackupNames();
+
+        if (!backupNames.isEmpty()) {
+            checkPermAndRestore(backupNames.get(0));
+        }
     }
 
-    public void checkPermAndRestore(String name) {
-        mBackupName = name;
+    public void checkPermAndRestore(String backupName) {
+        if (backupName == null) {
+            return;
+        }
 
         if (FileHelpers.isExternalStorageReadable()) {
-            if (PermissionHelpers.hasStoragePermissions(mContext)) {
-                restoreData();
+            if (hasStoragePermissions(mContext)) {
+                restoreData(backupName);
             } else {
-                mPendingHandler = this::restoreData;
+                mPendingHandler = () -> restoreData(backupName);
                 verifyStoragePermissionsAndReturn();
             }
         }
@@ -66,7 +130,7 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
 
     public void checkPermAndBackup() {
         if (FileHelpers.isExternalStorageWritable()) {
-            if (PermissionHelpers.hasStoragePermissions(mContext)) {
+            if (hasStoragePermissions(mContext)) {
                 backupData();
             } else {
                 mPendingHandler = this::backupData;
@@ -90,46 +154,44 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
             FileHelpers.delete(currentBackup);
         }
 
-        for (File dataDir : mDataDirs) {
-            if (dataDir.isDirectory() && !FileHelpers.isEmpty(dataDir)) {
-                File destination = new File(currentBackup, dataDir.getName());
-                FileHelpers.copy(dataDir, destination);
+        if (mDataDir.isDirectory() && !FileHelpers.isEmpty(mDataDir)) {
+            File destination = new File(currentBackup, mDataDir.getName());
+            FileHelpers.copy(mDataDir, destination);
 
-                // Don't store unique id
-                FileHelpers.delete(new File(destination, HiddenPrefs.SHARED_PREFERENCES_NAME + ".xml"));
-            }
+            // Don't store unique id
+            FileHelpers.delete(new File(destination, HiddenPrefs.SHARED_PREFERENCES_NAME + ".xml"));
+        }
+
+        if (hasAccessOnlyToAppFolders()) {
+            mHelper.exportAppMediaFolder();
         }
     }
 
-    private void restoreData() {
+    private void restoreData(String backupName) {
         Log.d(TAG, "App just updated. Restoring data...");
 
-        File currentBackup = getBackupCheck();
+        File currentBackup = getBackupCheck(backupName);
+        File sourceBackupDir = new File(currentBackup, SHARED_PREFS_SUBDIR);
 
-        if (FileHelpers.isEmpty(currentBackup)) {
+        if (FileHelpers.isEmpty(sourceBackupDir)) {
             Log.d(TAG, "Oops. Backup folder is empty.");
             MessageHelpers.showLongMessage(mContext, "Oops. Backup folder is empty.");
             return;
         }
 
-        for (File dataDir : mDataDirs) {
-            if (dataDir.isDirectory()) {
-                // remove old data
-                FileHelpers.delete(dataDir);
-            }
-
-            File sourceBackupDir = new File(currentBackup, dataDir.getName());
-
-            if (sourceBackupDir.exists() && !FileHelpers.isEmpty(sourceBackupDir)) {
-                FileHelpers.copy(sourceBackupDir, dataDir);
-                fixFileNames(dataDir);
-            }
+        if (mDataDir.isDirectory()) {
+            // remove old data
+            FileHelpers.delete(mDataDir);
         }
+
+        FileHelpers.copy(sourceBackupDir, mDataDir, fileName -> Helpers.endsWithAny(fileName.toString(), mBackupPatterns));
+        fixFileNames(mDataDir);
 
         MessageHelpers.showMessage(mContext, R.string.msg_done);
 
+        // NOTE: Don't restart the app, just kill. The reboot will broke the files.
         // To apply settings we need to kill the app
-        new Handler(mContext.getMainLooper()).postDelayed(() -> Utils.restartTheApp(mContext), 1_000);
+        new Handler(mContext.getMainLooper()).postDelayed(() -> Runtime.getRuntime().exit(0), 1_000);
     }
 
     /**
@@ -158,6 +220,8 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
     }
 
     private File getBackup() {
+        initBackupDirs();
+
         File currentBackup = null;
 
         for (File backupDir : mBackupDirs) {
@@ -168,22 +232,37 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
         return currentBackup;
     }
 
-    private File getBackupCheck() {
+    private File getBackupCheck(String backupName) {
+        initBackupDirs();
+
         File currentBackup = null;
 
         for (File backupDir : mBackupDirs) {
-            // FileHelpers.isEmpty(backupDir) needs access device storage permission
-            if (mBackupName != null && !mBackupName.isEmpty()) {
-                backupDir = new File(backupDir.getParentFile(), mBackupName);
+            File parentFile = backupDir.getParentFile(); // backupDir: /data/<app_id>/Backup
+
+            if (parentFile == null) {
+                continue;
             }
 
-            if (backupDir.exists()) {
+            if (backupDir.exists() && Helpers.equals(parentFile.getName(), backupName)) {
                 currentBackup = backupDir;
                 break;
             }
         }
 
         return currentBackup;
+    }
+
+    private File getBackupCheck() {
+        initBackupDirs();
+
+        for (File backupDir : mBackupDirs) {
+            if (backupDir.exists()) {
+                return backupDir.getParentFile();
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -206,6 +285,14 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
         return currentBackup != null ? currentBackup.toString() : null;
     }
 
+    public String getBackupRootPath() {
+        if (hasAccessOnlyToAppFolders()) {
+            return null; // Android 11+: only backup through the file manager (no shared dir)
+        }
+
+        return String.format("%s/data", getExternalStorageDirectory());
+    }
+
     public String getBackupPathCheck() {
         File currentBackup = getBackupCheck();
 
@@ -214,7 +301,7 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
 
     public void getBackupNames(OnBackupNames callback) {
         if (FileHelpers.isExternalStorageReadable()) {
-            if (PermissionHelpers.hasStoragePermissions(mContext)) {
+            if (hasStoragePermissions(mContext)) {
                 callback.onBackupNames(getBackupNames());
             } else {
                 mPendingHandler = () -> callback.onBackupNames(getBackupNames());
@@ -224,38 +311,39 @@ public class BackupAndRestoreManager implements MotherActivity.OnPermissions {
     }
 
     private List<String> getBackupNames() {
-        File current = getBackup();
+        initBackupDirs();
 
-        if (current != null) {
-            File parentFile = current.getParentFile();
+        List<String> names = new ArrayList<>();
+
+        for (File backupDir : mBackupDirs) {
+            File parentFile = backupDir.getParentFile();
 
             if (parentFile == null) {
-                return null;
+                continue;
             }
 
-            String[] list = parentFile.list();
-
-            if (list == null) {
-                return null;
+            if (backupDir.exists()) {
+                names.add(parentFile.getName());
             }
-
-            List<String> result = new ArrayList<>();
-
-            Arrays.sort(list);
-
-            for (String dirName : list) {
-                if (dirName.startsWith(BACKUP_DIR_NAME)) {
-                    result.add(dirName);
-                }
-            }
-
-            return result;
         }
 
-        return null;
+        return names;
+    }
+
+    private boolean hasStoragePermissions(Context context) {
+        return hasAccessOnlyToAppFolders() || PermissionHelpers.hasStoragePermissions(context);
     }
 
     public boolean hasBackup() {
         return getBackupCheck() != null;
+    }
+
+    // Android 11+: only backup through the file manager (no shared dir)
+    private boolean hasAccessOnlyToAppFolders() {
+        return getTargetSdkVersion() > 29 || mForceApi30;
+    }
+
+    private int getTargetSdkVersion() {
+        return mContext.getApplicationInfo().targetSdkVersion;
     }
 }

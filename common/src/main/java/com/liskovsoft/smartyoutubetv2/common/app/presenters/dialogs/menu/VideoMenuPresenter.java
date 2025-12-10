@@ -71,6 +71,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     private boolean mIsOpenCommentsButtonEnabled;
     private boolean mIsPlayVideoButtonEnabled;
     private boolean mIsPlayVideoIncognitoButtonEnabled;
+    private boolean mIsPlayFromStartButtonEnabled;
     private boolean mIsPlaylistOrderButtonEnabled;
     private boolean mIsStreamReminderButtonEnabled;
     private boolean mIsMarkAsWatchedButtonEnabled;
@@ -316,7 +317,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         }
 
         // Check view to allow open playlist in grid
-        if (mVideo == null || !mVideo.hasPlaylist() || (mVideo.belongsToSamePlaylistGroup() && getViewManager().getTopView() == ChannelUploadsView.class)) {
+        if (mVideo == null || !mVideo.hasPlaylist() || (getViewManager().getTopView() == ChannelUploadsView.class && mVideo.belongsToSamePlaylistGroup())) {
             return;
         }
 
@@ -596,6 +597,22 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 ));
     }
 
+    private void appendPlayFromStartButton() {
+        if (!mIsPlayFromStartButtonEnabled || mVideo == null || mVideo.videoId == null) {
+            return;
+        }
+
+        mDialogPresenter.appendSingleButton(
+                UiOptionItem.from(getContext().getString(R.string.play_from_start),
+                        optionItem -> {
+                            VideoStateService stateService = VideoStateService.instance(getContext());
+                            stateService.save(new State(mVideo, 0));
+                            PlaybackPresenter.instance(getContext()).openVideo(mVideo);
+                            mDialogPresenter.closeDialog();
+                        }
+                ));
+    }
+
     private void showLongTextDialog(String description) {
         mDialogPresenter.appendLongTextCategory(mVideo.getTitle(), UiOptionItem.from(description));
         mDialogPresenter.showDialog(mVideo.getTitle());
@@ -614,7 +631,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         mDialogPresenter.appendSingleButton(
                 UiOptionItem.from(getContext().getString(
-                        mVideo.isSynced || mVideo.isSubscribed || (!mServiceManager.isSigned() && mVideo.channelId != null) ? mVideo.isSubscribed ?
+                        mVideo.isSynced || mVideo.isSubscribed || (!getSignInService().isSigned() && mVideo.channelId != null) ? mVideo.isSubscribed ?
                                 R.string.unsubscribe_from_channel : R.string.subscribe_to_channel : R.string.subscribe_unsubscribe_from_channel),
                         optionItem -> toggleSubscribe()));
     }
@@ -643,7 +660,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         Playlist playlist = Playlist.instance();
         // Toggle between add/remove while dialog is opened
-        boolean containsVideo = playlist.containsAfterCurrent(mVideo);
+        //boolean containsVideo = playlist.containsAfterCurrent(mVideo);
+        boolean containsVideo = playlist.contains(mVideo);
 
         mDialogPresenter.appendSingleButton(
                 UiOptionItem.from(
@@ -680,6 +698,10 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         }
 
         Playlist playlist = Playlist.instance();
+
+        if (Helpers.equals(playlist.getNext(), mVideo)) {
+            return;
+        }
 
         mDialogPresenter.appendSingleButton(
                 UiOptionItem.from(
@@ -811,7 +833,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         // Until synced we won't really know weather we subscribed to a channel.
         // Exclusion: channel item (can't be synced)
         // Note, regular items (from subscribed section etc) aren't contain channel id
-        if (mVideo.isSynced || mVideo.isSubscribed || mVideo.isChannel() || (!mServiceManager.isSigned() && mVideo.channelId != null)) {
+        if (mVideo.isSynced || mVideo.isSubscribed || mVideo.isChannel() || (!getSignInService().isSigned() && mVideo.channelId != null)) {
             toggleSubscribe(mVideo);
         } else {
             MessageHelpers.showMessage(getContext(), R.string.wait_data_loading);
@@ -868,6 +890,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         mIsOpenDescriptionButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_OPEN_DESCRIPTION);
         mIsPlayVideoButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_PLAY_VIDEO);
         mIsPlayVideoIncognitoButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_PLAY_VIDEO_INCOGNITO);
+        mIsPlayFromStartButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_PLAY_FROM_START);
         mIsSubscribeButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_SUBSCRIBE);
         mIsStreamReminderButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_STREAM_REMINDER);
         mIsShowPlaybackQueueButtonEnabled = mainUIData.isMenuItemEnabled(MainUIData.MENU_ITEM_SHOW_QUEUE);
@@ -881,6 +904,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         mMenuMapping.put(MainUIData.MENU_ITEM_PLAY_VIDEO, new MenuAction(this::appendPlayVideoButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_PLAY_VIDEO_INCOGNITO, new MenuAction(this::appendPlayVideoIncognitoButton, false));
+        mMenuMapping.put(MainUIData.MENU_ITEM_PLAY_FROM_START, new MenuAction(this::appendPlayFromStartButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_REMOVE_FROM_HISTORY, new MenuAction(this::appendRemoveFromHistoryButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_STREAM_REMINDER, new MenuAction(this::appendStreamReminderButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_RECENT_PLAYLIST, new MenuAction(this::appendAddToRecentPlaylistButton, false));

@@ -54,6 +54,12 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
         createAndShowDialog();
     }
 
+    public void showLocalRestoreDialogApi30() {
+        BackupAndRestoreManager backupManager = new BackupAndRestoreManager(getContext(), true);
+
+        backupManager.getBackupNames(names -> showLocalRestoreDialog(backupManager, names));
+    }
+
     private void createAndShowDialog() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
@@ -117,8 +123,11 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
 
         BackupAndRestoreManager backupManager = new BackupAndRestoreManager(getContext());
 
+        String backupPath = backupManager.getBackupRootPath();
+
         options.add(UiOptionItem.from(
-                String.format("%s:\n%s", getContext().getString(R.string.app_backup), backupManager.getBackupPath()),
+                backupPath == null ? getContext().getString(R.string.app_backup) :
+                    String.format("%s:\n%s", getContext().getString(R.string.app_backup), backupPath),
                 option -> {
                     AppDialogUtil.showConfirmationDialog(getContext(), getContext().getString(R.string.app_backup), () -> {
                         mSidebarService.enableSection(MediaGroup.TYPE_SETTINGS, true); // prevent Settings lock
@@ -127,9 +136,9 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
                     });
                 }));
 
-        String backupPathCheck = backupManager.getBackupPathCheck();
         options.add(UiOptionItem.from(
-                String.format("%s:\n%s", getContext().getString(R.string.app_restore), backupPathCheck != null ? backupPathCheck : ""),
+                backupPath == null ? getContext().getString(R.string.app_restore) :
+                    String.format("%s:\n%s", getContext().getString(R.string.app_restore), backupPath),
                 option -> {
                     backupManager.getBackupNames(names -> showLocalRestoreDialog(backupManager, names));
                 }));
@@ -145,9 +154,7 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
         if (backups != null && backups.size() > 1) {
             showLocalRestoreSelectorDialog(backups, backupManager);
         } else {
-            AppDialogUtil.showConfirmationDialog(getContext(), getContext().getString(R.string.app_restore), () -> {
-                backupManager.checkPermAndRestore();
-            });
+            AppDialogUtil.showConfirmationDialog(getContext(), getContext().getString(R.string.app_restore), backupManager::checkPermAndRestore);
         }
     }
 

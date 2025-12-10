@@ -27,6 +27,7 @@ import com.google.android.exoplayer2.mediacodec.MediaCodecInfo;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
+import com.liskovsoft.sharedutils.helpers.DeviceHelpers;
 import com.liskovsoft.sharedutils.helpers.FileHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryStringFactory;
@@ -34,6 +35,7 @@ import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.internal.DisplayHolder.Mode;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.internal.UhdHelper;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.ExoUtils;
+import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -208,6 +210,7 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
         appendWebViewInfo();
         appendVideoInfoType();
         appendVideoInfoVersion();
+        appendAccountInfo();
 
         // Schedule next update
         mDebugViewGroup.removeCallbacks(this);
@@ -357,10 +360,8 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
     }
 
     private void appendMemoryInfo() {
-        long maxMemory = Runtime.getRuntime().maxMemory();
-        long allocatedMemory = Runtime.getRuntime().totalMemory();
-        appendRow("Memory limit (MB)", (int)(maxMemory / (1024 * 1024))); // Growth Limit
-        appendRow("Allocated memory (MB)", (int)(allocatedMemory / (1024 * 1024)));
+        appendRow("Max heap memory (MB)", DeviceHelpers.getMaxHeapMemoryMB()); // Growth Limit
+        appendRow("Allocated heap memory (MB)", DeviceHelpers.getAllocatedHeapMemoryMB());
     }
 
     private void appendWebViewInfo() {
@@ -368,8 +369,7 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
     }
 
     private void appendVideoInfoType() {
-        Pair<Integer, Boolean> videoInfoType = MediaServiceData.instance().getVideoInfoType();
-        appendRow("Video info type", videoInfoType.first);
+        appendRow("Video info type", MediaServiceData.instance().getVideoInfoType());
     }
 
     private void appendVideoInfoVersion() {
@@ -382,6 +382,10 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
             appendRow("Video info version", isFailed ? Utils.color(playerVersion, Color.RED) : playerVersion);
             appendRow("Video info url", isFailed ? Utils.color(shortPlayerUrl, Color.RED) : shortPlayerUrl);
         }
+    }
+
+    private void appendAccountInfo() {
+        appendRow("Account info", MediaServiceManager.instance().printAccountDebugInfo());
     }
 
     private void appendRow(String name, boolean val) {

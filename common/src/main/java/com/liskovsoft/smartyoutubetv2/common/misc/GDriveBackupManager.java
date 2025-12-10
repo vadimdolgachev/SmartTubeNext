@@ -240,7 +240,14 @@ public class GDriveBackupManager {
     }
 
     private String getAltPackageName() {
-        String[] altPackages = new String[] {"com.liskovsoft.smarttubetv.beta", "com.teamsmart.videomanager.tv"};
+        String[] altPackages = new String[] {
+                "com.liskovsoft.smarttubetv.beta",
+                "com.teamsmart.videomanager.tv",
+                "org.smarttube.beta",
+                "org.smarttube.stable",
+                "org.smarttube.fdroid"
+        };
+        // TODO: don't hard code ids. show all existed.
         return mContext.getPackageName().equals(altPackages[0]) ? altPackages[1] : altPackages[0];
     }
 

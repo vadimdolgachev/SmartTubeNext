@@ -34,6 +34,7 @@ android {
         ststable {}
         storig {}
         staptoide {}
+        stfdroid {}
         stbolshoetv {}
     }
 }

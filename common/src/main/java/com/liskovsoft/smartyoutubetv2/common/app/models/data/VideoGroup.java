@@ -1,7 +1,5 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.data;
 
-import android.text.TextUtils;
-
 import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
@@ -88,7 +86,7 @@ public class VideoGroup {
 
         for (Video item : items) {
             // Section as playlist fix. Don't change the root.
-            if (item.getGroup() == null) {
+            if (item.getGroup() == null || section != null) {
                 item.setGroup(videoGroup);
             }
         }
@@ -149,6 +147,27 @@ public class VideoGroup {
         return baseGroup;
     }
 
+    public static VideoGroup from(VideoGroup baseGroup, VideoGroup newGroup) {
+        baseGroup.mMediaGroup = newGroup.mMediaGroup;
+
+        if (newGroup.mMediaGroup == null) {
+            return baseGroup;
+        }
+
+        if (newGroup.getVideos() == null) {
+            Log.e(TAG, "MediaGroup doesn't contain media items. Title: " + newGroup.getTitle());
+            return baseGroup;
+        }
+
+        for (Video video : newGroup.getVideos()) {
+            baseGroup.add(video);
+        }
+
+        baseGroup.mAction = ACTION_APPEND;
+
+        return baseGroup;
+    }
+
     public static VideoGroup fromChapters(List<ChapterItem> chapters, String title) {
         VideoGroup videoGroup = new VideoGroup();
         videoGroup.mTitle = title;
@@ -166,7 +185,7 @@ public class VideoGroup {
     public List<Video> getVideos() {
         // NOTE: Don't make the collection read only
         // The collection will be filtered inside VideoGroupObjectAdapter
-        return mVideos;
+        return Collections.unmodifiableList(mVideos);
     }
 
     public String getTitle() {
@@ -238,7 +257,7 @@ public class VideoGroup {
     }
 
     public int getType() {
-        return mType != -1 ? mType : getMediaGroup() != null ? getMediaGroup().getType() : -1;
+        return mType != -1 ? mType : getMediaGroup() != null ? getMediaGroup().getType() : mSection != null ? mSection.getId() : -1;
     }
 
     public void setType(int type) {
@@ -392,10 +411,6 @@ public class VideoGroup {
         return mVideos.get(idx);
     }
 
-    public List<Video> getAll() {
-        return mVideos;
-    }
-
     public void remove(Video video) {
         if (mVideos == null) {
             return;
@@ -420,6 +435,14 @@ public class VideoGroup {
     }
 
     public void add(Video video) {
+        // TODO: remove the hack someday.
+        // Dirty hack for avoiding group duplication.
+        // Duplicated items suddenly appeared in Home, Subscriptions and History.
+        // See: VideoGroupObjectAdapter.mVideoItems
+        if (mVideos != null && mVideos.contains(video)) {
+            return;
+        }
+
         int size = getSize();
         add(size != -1 ? size : 0, video);
     }

@@ -9,7 +9,6 @@ import androidx.annotation.Nullable;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.helpers.ScreenHelper;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
@@ -88,15 +87,13 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mLocalGridMappings = new HashMap<>();
         mSectionsMapping = new HashMap<>();
         MediaServiceManager.instance().addAccountListener(this);
-        ScreenHelper.updateScreenInfo(context);
-        
+
         mBrowseProcessor = new BrowseProcessorManager(getContext(), this::syncItem);
         mActions = new ArrayList<>();
 
         initSectionMappings();
         updateChannelSorting();
         updatePlaylistsStyle();
-        initPinnedData();
     }
 
     public static BrowsePresenter instance(Context context) {
@@ -121,7 +118,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        refreshSections();
+        updateSections();
 
         // Move default focus
         int selectedSectionIndex = findSectionIndex(mCurrentSection != null ? mCurrentSection.getId() : mBootstrapSectionId);
@@ -289,10 +286,9 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         int bootSectionId = getSidebarService().getBootSectionId();
 
-        // Empty Home on first run fix. Switch Trending temporarily.
+        // Empty Home on first run fix. Switch to something non-empty.
         if (!getSignInService().isSigned() && VideoStateService.instance(getContext()).isEmpty()) {
-            bootSectionId = MediaGroup.TYPE_TRENDING;
-            //getSidebarService().enableSection(bootSectionId, true);
+            bootSectionId = MediaGroup.TYPE_MUSIC;
         }
 
         int index = 0;
@@ -447,7 +443,8 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         } else {
             VideoMenuPresenter.instance(getContext()).showMenu(item, (videoItem, action) -> {
                 if (action == VideoMenuCallback.ACTION_REMOVE ||
-                    action == VideoMenuCallback.ACTION_REMOVE_FROM_PLAYLIST) {
+                    action == VideoMenuCallback.ACTION_REMOVE_FROM_PLAYLIST ||
+                    action == VideoMenuCallback.ACTION_REMOVE_FROM_QUEUE) {
                     removeItem(videoItem);
                 } else if (action == VideoMenuCallback.ACTION_UNSUBSCRIBE && isMultiGridChannelUploadsSection()) {
                     removeItem(mCurrentVideo);
@@ -665,6 +662,8 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private void updateLocalGrid(BrowseSection section, Callable<List<Video>> items) {
         VideoGroup videoGroup = VideoGroup.from(Helpers.get(items), section);
         videoGroup.setAction(VideoGroup.ACTION_REPLACE);
+        videoGroup.setId(videoGroup.hashCode());
+        videoGroup.setTitle(section.getTitle());
         getView().updateSection(videoGroup);
         getView().showProgressBar(false);
     }
@@ -754,9 +753,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         getView().showProgressBar(true);
 
-        VideoGroup firstGroup = VideoGroup.from(section, column);
-        firstGroup.setAction(VideoGroup.ACTION_REPLACE);
-        getView().updateSection(firstGroup);
+        // Stay on the same group in case of multiple subscribe calls
+        VideoGroup baseGroup = VideoGroup.from(section, column);
+        baseGroup.setAction(VideoGroup.ACTION_REPLACE);
+        getView().updateSection(baseGroup);
 
         if (group == null) {
             // No group. Maybe just clear.
@@ -775,7 +775,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                                 return;
                             }
 
-                            VideoGroup videoGroup = VideoGroup.from(mediaGroup, section, column);
+                            VideoGroup videoGroup = VideoGroup.from(baseGroup, mediaGroup);
                             appendLocalHistory(videoGroup);
                             getView().updateSection(videoGroup);
                             mBrowseProcessor.process(videoGroup);
@@ -865,7 +865,6 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             if (isHistorySection() && !VideoStateService.instance(getContext()).isEmpty()) {
                 getView().showProgressBar(false);
                 VideoGroup videoGroup = VideoGroup.from(getCurrentSection());
-                videoGroup.setType(MediaGroup.TYPE_HISTORY);
                 appendLocalHistory(videoGroup);
                 getView().updateSection(videoGroup);
             } else {
@@ -1024,7 +1023,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
     private Observable<MediaGroup> createPinnedGridAction(Video item) {
         if (item.channelGroupId != null) {
-            return getContentService().getSubscriptionsObserve(ChannelGroupServiceWrapper.instance(getContext()).findChannelIdsForGroup(item.channelGroupId));
+            return getContentService().getRssFeedObserve(ChannelGroupServiceWrapper.instance(getContext()).findChannelIdsForGroup(item.channelGroupId));
         }
 
         return ChannelUploadsPresenter.instance(getContext()).obtainUploadsObservable(item);
@@ -1059,6 +1058,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
     public boolean isSubscriptionsSection() {
         return isSection(MediaGroup.TYPE_SUBSCRIPTIONS);
+    }
+    
+    public boolean isPlaybackQueueSection() {
+        return isSection(MediaGroup.TYPE_PLAYBACK_QUEUE);
     }
 
     public boolean isPinnedSection() {
@@ -1170,7 +1173,6 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                 PlayerTweaksData playerTweaksData = PlayerTweaksData.instance(getContext());
                 if (!playerTweaksData.isIPv4DnsPreferred()) {
                     playerTweaksData.setIPv4DnsPreferred(true);
-                    playerTweaksData.persistNow();
                     // Restart app to reinit okhttp internal objects
                     Utils.restartTheApp(getContext());
                 }

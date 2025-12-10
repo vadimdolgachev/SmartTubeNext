@@ -545,7 +545,8 @@ public final class Video {
     }
 
     public boolean isMix() {
-        return mediaItem != null && !isLive && !isLiveEnd && Helpers.hasWords(badge) &&
+        // NOTE: don't check for 'mediaItem != null'. some objects are lightweight
+        return !isLive && !isLiveEnd && Helpers.hasWords(badge) &&
                 (durationMs <= 0 || isSynced) && (hasPlaylist() || hasChannel() || hasNestedItems());
     }
 
@@ -602,7 +603,7 @@ public final class Video {
         }
 
         // Some items may not have a playlistId (e.g. movies)
-        List<Video> filtered = Helpers.filter(getGroup().getVideos(), item -> item.getPlaylistId() != null || item.playlistParams != null, 10);
+        List<Video> filtered = Helpers.filter(getGroup().getVideos(), item -> item.getPlaylistId() != null || item.playlistParams != null, 2);
 
         if (filtered == null || filtered.size() < 2) {
             return false;
@@ -876,13 +877,22 @@ public final class Video {
         }
     }
 
+    ///**
+    // * The section playlist intended (as a backup replacement) for cases when regular playlist not available
+    // */
+    //public boolean isSectionPlaylistEnabled(Context context) {
+    //    return PlayerTweaksData.instance(context).isSectionPlaylistEnabled() && !belongsToSuggestions()
+    //            && (!checkAllVideosHasPlaylist() || PLAYLIST_LIKED_MUSIC.equals(playlistId) || nextMediaItem == null
+    //                   || (!isMix() && !belongsToSamePlaylistGroup())) // skip hidden playlists (music videos usually)
+    //            && (!isRemote || remotePlaylistId == null);
+    //}
+
     /**
      * The section playlist intended (as a backup replacement) for cases when regular playlist not available
      */
     public boolean isSectionPlaylistEnabled(Context context) {
-        return PlayerTweaksData.instance(context).isSectionPlaylistEnabled() && !belongsToSuggestions()
-                && (!checkAllVideosHasPlaylist() || PLAYLIST_LIKED_MUSIC.equals(playlistId) || nextMediaItem == null
-                       || (!isMix() && !belongsToSamePlaylistGroup())) // skip hidden playlists (music videos usually)
+        return PlayerTweaksData.instance(context).isSectionPlaylistEnabled() && !belongsToSuggestions() && !belongsToPlaybackQueue()
+                && (!checkAllVideosHasPlaylist() || nextMediaItem == null || !isMix()) // skip hidden playlists (music videos usually)
                 && (!isRemote || remotePlaylistId == null);
     }
 

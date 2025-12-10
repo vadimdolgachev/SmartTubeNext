@@ -17,6 +17,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +61,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         appendSeparateSettings(settingsPresenter);
         appendSelectAccountOnBoot(settingsPresenter);
 
-        Account account = MediaServiceManager.instance().getSelectedAccount();
+        Account account = getSignInService().getSelectedAccount();
         settingsPresenter.showDialog(account != null ? account.getName() : getContext().getString(R.string.settings_accounts), this::unhold);
     }
 
@@ -165,7 +166,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void removeAccount(Account account) {
-        mMediaServiceManager.getSingInService().removeAccount(account);
+        getSignInService().removeAccount(account);
         BrowsePresenter.instance(getContext()).refresh(false);
     }
 
@@ -196,7 +197,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
                 getContext().getString(R.string.enter_account_password),
                 null,
                 newValue -> {
-                    if (password.equals(newValue)) {
+                    if (Utils.passwordMatch(password, newValue)) {
                         AccountsData.instance(getContext()).setAccountPassword(null);
                         BrowsePresenter.instance(getContext()).updateSections();
                         //onSuccess.run();
@@ -218,7 +219,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
                 getContext().getString(R.string.enter_account_password),
                 null,
                 newValue -> {
-                    if (password.equals(newValue)) {
+                    if (Utils.passwordMatch(password, newValue)) {
                         AccountsData.instance(getContext()).setPasswordAccepted(true);
                         BrowsePresenter.instance(getContext()).updateSections();
                         //onSuccess.run();

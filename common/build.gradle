@@ -41,6 +41,7 @@ android {
     productFlavors {
         stbeta {}
         ststable {}
+        stfdroid {}
         storig {}
         strtarmenia {}
         stbolshoetv {}
@@ -98,20 +99,7 @@ dependencies {
 
     implementation 'com.jakewharton:process-phoenix:' + phoenixVersion
 
-    stbetaImplementation project(':leanbackassistant')
-    ststableImplementation project(':leanbackassistant')
-    storigImplementation project(':leanbackassistant')
-    staptoideImplementation project(':leanbackassistant')
-    stbolshoetvImplementation project(':leanbackassistant')
+    implementation project(':leanbackassistant')
 
-    stbetaImplementation project(':appupdatechecker2')
-    ststableImplementation project(':appupdatechecker2')
-    storigImplementation project(':appupdatechecker2')
-    strtarmeniaImplementation project(':appupdatechecker2')
-    stredboxtvImplementation project(':appupdatechecker2')
-    stsibsetruImplementation project(':appupdatechecker2')
-    stamazonImplementation project(':appupdatechecker2')
-    staptoideImplementation project(':appupdatechecker2')
+    implementation project(':appupdatechecker2')
 }
-
-apply from: 'custom-deps.gradle'
