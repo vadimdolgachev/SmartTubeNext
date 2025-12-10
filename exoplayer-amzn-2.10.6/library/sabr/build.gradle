@@ -49,6 +49,7 @@ android {
         stbeta {}
         ststable {}
         stfdroid {}
+        stbolshoetv {}
     }
 }
 
